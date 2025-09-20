@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ category.category_name }} - Habits</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #2C3E50, #1a1a1a);
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    h2 {
+      color: #00ff99;
+    }
+    .habit {
+      background: rgba(255,255,255,0.05);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .habit button {
+      background: #00ff99;
+      border: none;
+      padding: 5px 10px;
+      margin-left: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .add-custom {
+      margin-top: 20px;
+      background: #00ff99;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>{{ category.category_name }}</h2>
+
+    {% for habit in habits %}
+      <div class="habit">
+        <span>{{ habit.habit_name }}</span>
+        <div>
+          <!-- Add -->
+          <form method="post" action="{{ url_for('add_habit', category_id=category.category_id) }}" style="display:inline;">
+            <input type="hidden" name="habit_name" value="{{ habit.habit_name }}">
+            <button type="submit">+</button>
+          </form>
+          <!-- Edit -->
+          <form method="post" action="{{ url_for('edit_habit', habit_id=habit.habit_id) }}" style="display:inline;">
+            <input type="text" name="habit_name" value="{{ habit.habit_name }}">
+            <button type="submit">Edit</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+
+    <!-- Add custom habit -->
+    <form method="post" action="{{ url_for('add_habit', category_id=category.category_id) }}">
+      <input type="text" name="habit_name" placeholder="Enter custom habit" required>
+      <button type="submit" class="add-custom">+ Add Custom Habit</button>
+    </form>
+  </div>
+</body>
+</html>

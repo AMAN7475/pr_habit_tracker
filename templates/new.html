@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ category.category_name }} — Track It</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* simplified copy of your theme so this page matches dashboard */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2C3E50, #1a1a1a);
+      color: #fff;
+      min-height: 100vh;
+    }
+    .navbar {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 18px 30px; background: rgba(0,0,0,0.6); position:relative;
+    }
+    .menu-btn{ font-size:26px; cursor:pointer; }
+    .logo{ position:absolute; left:50%; transform:translateX(-50%); font-size:22px; color:#00ff99; }
+    .username{ font-size:18px; color:#ccc; }
+    .container{ max-width:900px; margin:30px auto; padding:0 16px; }
+    h1{ color:#00ff99; margin-bottom:12px; }
+
+    .habit-card{
+      background: rgba(255,255,255,0.05);
+      border-radius:10px;
+      padding:14px 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+      box-shadow:0 4px 15px rgba(0,0,0,0.4);
+    }
+    .habit-name{ font-size:18px; font-weight:500; }
+    .actions { display:flex; gap:8px; align-items:center; }
+
+    .btn {
+      border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
+    }
+    .btn-add{ background:#00ff99; color:#000; }
+    .btn-edit{ background:#444; color:#fff; }
+
+    form.inline{ display:inline-block; margin:0; }
+    input.edit-input{ padding:6px 8px; border-radius:6px; border:1px solid #444; background:transparent; color:#fff; }
+
+    .bottom-add { display:block; margin:20px auto 60px; background:#00ff99; color:#000; border:none; padding:12px 18px; border-radius:10px; font-weight:700; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <!-- navbar (keeps visual parity) -->
+  <div class="navbar">
+    <div class="menu-btn" onclick="openSidebar()">☰</div>
+    <div class="logo">TRACK IT</div>
+    <div class="username">Hello, {{ username }}</div>
+  </div>
+
+  <div class="container">
+    <h1>{{ category.category_name }} — Habits</h1>
+
+    {% if habits %}
+      {% for habit in habits %}
+        <div class="habit-card">
+          <div class="habit-name">{{ habit.habit_name }}</div>
+
+          <div class="actions">
+            <!-- Add to My Habits -->
+            <form method="post" action="{{ url_for('select_habit') }}" class="inline">
+              <input type="hidden" name="habit_id" value="{{ habit.habit_id }}">
+              <button type="submit" class="btn btn-add">＋ Add</button>
+            </form>
+
+            <!-- Edit inline (submits to select_habit as custom name override if you want) -->
+            <form method="post" action="{{ url_for('select_habit') }}" class="inline">
+              <input type="hidden" name="habit_id" value="{{ habit.habit_id }}">
+              <input class="edit-input" type="text" name="custom_name" placeholder="Rename (optional)">
+              <button type="submit" class="btn btn-edit">✏️ Add & Rename</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No habits found for this category yet.</p>
+    {% endif %}
+
+    <!-- bottom: add custom habit (opens small form) -->
+    <form method="post" action="{{ url_for('add_habit', category_id=category.category_id) }}">
+      <input type="text" name="habit_name" placeholder="Create custom habit for this category" required style="width:70%; padding:8px 10px; border-radius:8px; border:1px solid #444; background:transparent; color:#fff;">
+      <button type="submit" class="bottom-add">＋ Add Custom Habit</button>
+    </form>
+
+    <p style="color:#999; font-size:13px; margin-top:18px;">Prebuilt habits are shared for all users. Only custom categories & habits created with your account will be visible to you.</p>
+  </div>
+
+  <script>
+    function openSidebar(){ document.getElementById('sidebar')?.style.width = '250px'; }
+    function closeSidebar(){ document.getElementById('sidebar')?.style.width = '0'; }
+  </script>
+</body>
+</html>

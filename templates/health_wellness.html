@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Health & Wellness{% endblock %}
+
+{% block content %}
+  <h2>Health & Wellness</h2>
+
+  <div class="habits-grid">
+    {% for habit in habits %}
+      <div class="habit-card">
+        <h3>{{ habit.habit_name }}</h3>
+
+        <!-- Buttons inside card -->
+        <div class="card-actions">
+          <button class="habit-btn">+ Add</button>
+          <button class="edit-btn">Edit</button>
+        </div>
+      </div>
+    {% endfor %}
+
+    <!-- Custom Add Yours Card -->
+    <div class="habit-card add-yours">
+      Add Yours   <!-- 🔹 removed button, now styled like custom category -->
+    </div>
+  </div>
+
+  <style>
+    .habits-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); /* 2 columns */
+      gap: 18px; 
+      margin-top: 20px;       /* 🔹 shifted upward */
+      max-width: 750px;      /* 🔹 narrower layout */
+
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .habit-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px;           /* 🔹 smaller padding */
+      border-radius: 15px;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      text-align: center;
+      transition: all 0.3s ease;
+      min-height: 74px;       /* 🔹 smaller height */
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .habit-card:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-5px);
+      color: #fff;
+    }
+
+    .habit-card h3 {
+      margin: 0;
+      font-size: 17px;  /* 🔹 smaller text */
+      color: #fff;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .habit-btn {
+      background: #00ff99;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 6px 12px;    /* 🔹 increased size (was 2px 5px) */
+      border-radius: 6px;   /* 🔹 bigger corners */
+      cursor: pointer;
+      font-size: 12px;      /* 🔹 bigger text (was 9px) */
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .habit-btn:hover {
+      background: #00cc77;
+    }
+
+    .edit-btn {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;   /* 🔹 increased size (was 2px 5px) */
+      border-radius: 6px;  /* 🔹 bigger corners */
+      cursor: pointer;
+      font-size: 12px;     /* 🔹 bigger text (was 9px) */
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .edit-btn:hover {
+      background: #0056b3;
+    }
+
+    /* 🔹 Add Yours same as Custom category */
+    .add-yours {
+      background: #00ff99;
+      color: #000;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 15px;
+      padding: 25px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .add-yours:hover {
+      background: #00cc77;
+    }
+  </style>
+{% endblock %}

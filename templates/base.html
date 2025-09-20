@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Track It{% endblock %}</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2C3E50, #1a1a1a);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 30px;
+      background: rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    .menu-btn {
+      font-size: 26px;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .username {
+      font-size: 18px;
+      color: #ccc;
+    }
+
+    .logo {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px;
+      font-weight: bold;
+      color: #00ff99;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      height: 60%;
+      width: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 1.0);
+      overflow-x: hidden;
+      transition: 0.4s;
+      padding-top: 60px;
+      z-index: 1000;
+      border-bottom-right-radius: 20px;
+    }
+
+    .sidebar a {
+      padding: 12px 20px 18px 05px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #fff;
+      display: block;
+      transition: 0.3s;
+      text-align: center;
+    }
+
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #00ff99;
+    }
+
+    .sidebar .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 30px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    /* Page content area */
+    .page-content {
+      flex: 1;
+      padding: 30px 50px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar">
+    <span class="close-btn" onclick="closeSidebar()">×</span>
+    <a href="#">My Profile</a>
+    <a href="#">My Stats</a>
+    <a href="#">My Habits</a>
+    <a href="#">Settings</a>
+    <a href="#">Contact Us</a>
+    <a href="/logout">Logout</a>
+  </div>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="menu-btn" onclick="openSidebar()">☰</div>
+    <div class="logo">TRACK IT</div>
+    <div class="username">Hello, {{ username }}</div>
+  </div>
+
+  <!-- Page-specific content -->
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    function openSidebar() {
+      document.getElementById("sidebar").style.width = "250px";
+    }
+    function closeSidebar() {
+      document.getElementById("sidebar").style.width = "0";
+    }
+  </script>
+</body>
+</html>
+

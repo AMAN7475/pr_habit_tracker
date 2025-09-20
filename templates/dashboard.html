@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Track It{% endblock %}
+
+{% block content %}
+  <h2>Select Habits</h2>
+
+  <div class="categories">
+    <a href="{{ url_for('health_wellness') }}" class="category">Health & Wellness</a>
+    <a href="{{ url_for('learning_growth') }}" class="category">Learning & Growth</a>
+    <a href="{{ url_for('productivity') }}" class="category">Productivity</a>
+    <a href="{{ url_for('finance_discipline') }}" class="category">Finance & Discipline</a>
+    <a href="{{ url_for('personal_lifestyle') }}" class="category">Personal & Lifestyle</a>
+    <a href="#" class="category custom">Custom</a>
+  </div>
+
+  <style>
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+      max-width: 800px;
+      margin: auto;
+      margin-top: 20px;
+    }
+
+    .category {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 35px;
+      text-align: center;
+      border-radius: 15px;
+      font-size: 20px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      color: #fff;
+      text-decoration: none;
+      display: block;
+    }
+
+    .category:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-5px);
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .custom {
+      background: #00ff99;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .custom:hover {
+      background: #00cc77;
+    }
+  </style>
+{% endblock %}
