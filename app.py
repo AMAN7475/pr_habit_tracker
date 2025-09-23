@@ -83,7 +83,7 @@ def create_tables_and_seed():
 
     mysql.connection.commit()
     cursor.close()
-    print("✅ Tables created/verified.")
+    #print("✅ Tables created/verified.")
 
 with app.app_context():
     try:
@@ -174,7 +174,7 @@ def seed_default_habits():
 
     mysql.connection.commit()
     cursor.close()
-    print("✅ Default categories & habits seeded.")
+    #print("✅ Default categories & habits seeded.")
 
 
 # Run DB setup + seeding

@@ -19,8 +19,18 @@
     {% endfor %}
 
     <!-- Custom Add Yours Card -->
-    <div class="habit-card add-yours">
-      Add Yours   <!-- 🔹 removed button, now styled like custom category -->
+    <div class="habit-card add-yours" id="openModal"> <!-- 🔹 Added id for JS -->
+      Add Yours
+    </div>
+  </div>
+
+  <!-- 🔹 NEW: Popup Modal -->
+  <div id="habitModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span> <!-- 🔹 Close button -->
+      <h3>Add New Habit</h3>
+      <input type="text" id="newHabitInput" placeholder="Not more than 30 words">
+      <button class="habit-btn">Save</button> <!-- 🔹 Styled same as Add/Edit -->
     </div>
   </div>
 
@@ -29,21 +39,20 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr); /* 2 columns */
       gap: 18px; 
-      margin-top: 20px;       /* 🔹 shifted upward */
-      max-width: 750px;      /* 🔹 narrower layout */
-
+      margin-top: 20px;
+      max-width: 750px;
       margin-left: auto;
       margin-right: auto;
     }
 
     .habit-card {
       background: rgba(255, 255, 255, 0.05);
-      padding: 8px;           /* 🔹 smaller padding */
+      padding: 8px;
       border-radius: 15px;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
       text-align: center;
       transition: all 0.3s ease;
-      min-height: 74px;       /* 🔹 smaller height */
+      min-height: 74px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -52,12 +61,16 @@
     .habit-card:hover {
       background: rgba(255, 255, 255, 0.12);
       transform: translateY(-5px);
-      color: #fff;
+    }
+
+    /* 🔹 Only text turns neon green */
+    .habit-card:hover h3 {
+      color: #00ff99;
     }
 
     .habit-card h3 {
       margin: 0;
-      font-size: 17px;  /* 🔹 smaller text */
+      font-size: 18px;
       color: #fff;
       flex-grow: 1;
       display: flex;
@@ -68,51 +81,57 @@
     .card-actions {
       display: flex;
       justify-content: center;
-      gap: 5px;
-      margin-top: 4px;
+      gap: 12px;
+      margin-top: 2.5px;
+      margin-bottom: 2.5px;
     }
 
     .habit-btn {
-      background: #00ff99;
-      color: #000;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      color: #fff;
       font-weight: bold;
       border: none;
-      padding: 6px 12px;    /* 🔹 increased size (was 2px 5px) */
-      border-radius: 6px;   /* 🔹 bigger corners */
+      padding: 9px 16px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 12px;      /* 🔹 bigger text (was 9px) */
+      font-size: 14px;
       transition: all 0.3s ease;
       flex-shrink: 0;
     }
 
     .habit-btn:hover {
-      background: #00cc77;
+      background: #00ff99;
+      color: #000;
     }
 
     .edit-btn {
-      background: #007bff;
-      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      color: #fff;      
       border: none;
-      padding: 6px 12px;   /* 🔹 increased size (was 2px 5px) */
-      border-radius: 6px;  /* 🔹 bigger corners */
+      padding: 9px 16px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 12px;     /* 🔹 bigger text (was 9px) */
+      font-size: 14px;
       font-weight: bold;
       transition: all 0.3s ease;
     }
 
     .edit-btn:hover {
-      background: #0056b3;
+      background: #00ff99;
+      color: #000;
     }
 
-    /* 🔹 Add Yours same as Custom category */
+    /* Add Yours Card */
     .add-yours {
       background: #00ff99;
       color: #000;
       font-weight: bold;
       font-size: 16px;
       border-radius: 15px;
-      padding: 25px;
+      padding: 8px;
+      min-height: 74px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -125,5 +144,95 @@
     .add-yours:hover {
       background: #00cc77;
     }
+
+    /* 🔹 MODAL STYLES */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.97);
+      backdrop-filter: blur(1.5px); /* 🔹 Blurred background */
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 25px;
+      border-radius: 15px;
+      max-width: 95%;
+      width: 450px;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .modal-content h3 {
+      margin-bottom: 15px;
+      color: #00ff99;
+      font-size: 20px;
+    }
+
+    .modal-content input {
+      width: 100%;
+      height: 50px;
+      padding:12px;
+      border-radius: 10px;
+      border:1px solid #00ff99; ;
+      outline: none;
+      resize: none;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      margin-bottom: 18px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    /* 🔹 Close button */
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 15px;
+      font-size: 26px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #ff4d4d;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .close-btn:hover {
+      color: #ff1a1a;
+      transform: scale(1.1);
+    }
   </style>
+
+  <script>
+    // 🔹 JS for Modal
+    const modal = document.getElementById("habitModal");
+    const openModal = document.getElementById("openModal");
+    const closeModal = document.getElementById("closeModal");
+
+    openModal.addEventListener("click", () => {
+      modal.style.display = "flex";
+    });
+
+    closeModal.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    // Close if clicking outside modal content
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  </script>
 {% endblock %}
