@@ -58,7 +58,7 @@ def create_tables_and_seed():
         category_id INT,
         user_id INT NULL,
         habit_name VARCHAR(255),
-        is_custom BOOLEAN DEFAULT FALSE,
+        is_custom TINYINT(1) DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE,
         created_at DATETIME,
         FOREIGN KEY (category_id) REFERENCES categories(category_id),
@@ -281,27 +281,38 @@ def health_wellness():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Fetch the Health & Wellness category_id
+    # Get category_id
     cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Health & Wellness",))
     category = cursor.fetchone()
-
     if not category:
         cursor.close()
         return "Category 'Health & Wellness' not found in DB"
 
     category_id = category["category_id"]
 
-    # Fetch habits under this category
-    cursor.execute("SELECT * FROM habits WHERE category_id = %s", (category_id,))
+    # Fetch habits along with user custom_name if exists
+    cursor.execute("""
+        SELECT h.habit_id, 
+               h.habit_name, 
+               ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush 
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
     habits = cursor.fetchall()
-
     cursor.close()
+
+    # Pass the name to display: custom_name if exists, else default habit_name
+    for habit in habits:
+        habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
 
     return render_template(
         "health_wellness.html",
         username=session["username"],
         habits=habits
     )
+
 
 
 
@@ -314,7 +325,7 @@ def learning_growth():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Fetch the Learning & Growth category_id
+    # Get category_id
     cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Learning & Growth",))
     category = cursor.fetchone()
 
@@ -324,11 +335,22 @@ def learning_growth():
 
     category_id = category["category_id"]
 
-    # Fetch habits under this category
-    cursor.execute("SELECT * FROM habits WHERE category_id = %s", (category_id,))
+    # Fetch habits along with user custom_name if exists
+    cursor.execute("""
+        SELECT h.habit_id, 
+               h.habit_name, 
+               ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush 
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
     habits = cursor.fetchall()
-
     cursor.close()
+
+    # Pass the name to display: custom_name if exists, else default habit_name
+    for habit in habits:
+        habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
 
     return render_template(
         "learning_growth.html",
@@ -346,7 +368,7 @@ def productivity():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Fetch the Productivity category_id
+    # Get category_id
     cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Productivity",))
     category = cursor.fetchone()
 
@@ -356,11 +378,22 @@ def productivity():
 
     category_id = category["category_id"]
 
-    # Fetch habits under this category
-    cursor.execute("SELECT * FROM habits WHERE category_id = %s", (category_id,))
+    # Fetch habits along with user custom_name if exists
+    cursor.execute("""
+        SELECT h.habit_id, 
+               h.habit_name, 
+               ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush 
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
     habits = cursor.fetchall()
-
     cursor.close()
+
+    # Pass the name to display: custom_name if exists, else default habit_name
+    for habit in habits:
+        habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
 
     return render_template(
         "productivity.html",
@@ -388,17 +421,28 @@ def finance_discipline():
 
     category_id = category["category_id"]
 
-    # Fetch habits under this category
-    cursor.execute("SELECT * FROM habits WHERE category_id = %s", (category_id,))
+    # Fetch habits along with user custom_name if exists
+    cursor.execute("""
+        SELECT h.habit_id, 
+               h.habit_name, 
+               ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush 
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
     habits = cursor.fetchall()
-
     cursor.close()
+
+    # Pass the name to display: custom_name if exists, else default habit_name
+    for habit in habits:
+        habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
 
     return render_template(
         "finance_discipline.html",
         username=session["username"],
         habits=habits
-    )        
+    )   
 
 
 
@@ -421,17 +465,209 @@ def personal_lifestyle():
 
     category_id = category["category_id"]
     
-     # Fetch habits under this category
-    cursor.execute("SELECT * FROM habits WHERE category_id = %s", (category_id,))
+    # Fetch habits along with user custom_name if exists
+    cursor.execute("""
+        SELECT h.habit_id, 
+               h.habit_name, 
+               ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush 
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
     habits = cursor.fetchall()
-
     cursor.close()
+
+    # Pass the name to display: custom_name if exists, else default habit_name
+    for habit in habits:
+        habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
 
     return render_template(
         "personal_lifestyle.html",
         username=session["username"],
         habits=habits
-    )           
+    )
+
+
+
+# ---------------------------
+# Add Predefined Habit
+# ---------------------------
+@app.route("/add_habit/<int:habit_id>", methods=["POST"])
+def add_habit(habit_id):
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor()
+
+    # Insert into user_selected_habits (if not already added)
+    cursor.execute("""
+        SELECT * FROM user_selected_habits WHERE user_id=%s AND habit_id=%s
+    """, (user_id, habit_id))
+    exists = cursor.fetchone()
+
+    if not exists:
+        cursor.execute("""
+            INSERT INTO user_selected_habits (user_id, habit_id, date_added)
+            VALUES (%s, %s, CURDATE())
+        """, (user_id, habit_id))
+        mysql.connection.commit()
+
+    cursor.close()
+    flash("Habit added successfully!", "success")
+    return redirect(request.referrer)
+
+
+# ---------------------------
+# Add Custom Habit
+# ---------------------------
+@app.route("/add_custom_habit/<string:category_name>", methods=["POST"])
+def add_custom_habit(category_name):
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    habit_name = request.form["habit_name"]
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Get category_id for this category
+    cursor.execute("SELECT category_id FROM categories WHERE category_name=%s", (category_name,))
+    category = cursor.fetchone()
+    if not category:
+        cursor.close()
+        flash("Category not found ❌", "danger")
+        return redirect(request.referrer)
+
+    category_id = category["category_id"]
+
+    # Insert into habits (custom habit)
+    cursor.execute("""
+        INSERT INTO habits (category_id, user_id, habit_name, is_custom, is_active, created_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+    """, (category_id, user_id, habit_name, True, True))
+    mysql.connection.commit()
+    habit_id = cursor.lastrowid
+
+    # Insert into user_selected_habits
+    cursor.execute("""
+        INSERT INTO user_selected_habits (user_id, habit_id, date_added, custom_name)
+        VALUES (%s, %s, CURDATE(), %s)
+    """, (user_id, habit_id, habit_name))
+    mysql.connection.commit()
+
+    cursor.close()
+    flash("Custom habit added 🎉", "success")
+    return redirect(request.referrer)
+
+
+# ---------------------------
+# My Habits Page
+# ---------------------------
+@app.route("/my_habits")
+def my_habits():
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch all user-selected habits (predefined + custom)
+    cursor.execute("""
+        SELECT ush.entry_id,
+               h.habit_id, 
+               h.habit_name, 
+               ush.custom_name, 
+               c.category_name, 
+               ush.date_added
+        FROM user_selected_habits ush
+        JOIN habits h ON ush.habit_id = h.habit_id
+        JOIN categories c ON h.category_id = c.category_id
+        WHERE ush.user_id = %s
+        ORDER BY ush.date_added DESC
+    """, (user_id,))
+    user_habits = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template("my_habits.html", username=session["username"], habits=user_habits)
+
+
+
+#----------------------------
+# Edit Habits
+#----------------------------
+@app.route("/edit_habit", methods=["POST"])
+def edit_habit():
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    habit_id = request.form["habit_id"]
+    custom_name = request.form["custom_name"]
+
+    cursor = mysql.connection.cursor()
+
+    # Check if the habit is already in user_selected_habits
+    cursor.execute("""
+        SELECT entry_id FROM user_selected_habits 
+        WHERE user_id=%s AND habit_id=%s
+    """, (user_id, habit_id))
+    entry = cursor.fetchone()
+
+    if entry:
+        # Update custom_name if already added
+        cursor.execute("""
+            UPDATE user_selected_habits
+            SET custom_name=%s
+            WHERE user_id=%s AND habit_id=%s
+        """, (custom_name, user_id, habit_id))
+    else:
+        # Insert into user_selected_habits with custom name
+        cursor.execute("""
+            INSERT INTO user_selected_habits (user_id, habit_id, date_added, custom_name)
+            VALUES (%s, %s, CURDATE(), %s)
+        """, (user_id, habit_id, custom_name))
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("Habit edited successfully!", "success")
+    return redirect(request.referrer)
+
+
+#----------------------------
+# Remove Habits
+#----------------------------
+@app.route('/remove_habit/<int:habit_id>', methods=['POST'])
+def remove_habit(habit_id):
+    cursor = mysql.connection.cursor()
+
+    # Step 1: Remove from user_selected_habits (always do this)
+    cursor.execute("""
+        DELETE FROM user_selected_habits 
+        WHERE habit_id = %s AND user_id = %s
+    """, (habit_id, session['user_id']))
+
+    # Step 2: Check if it's a custom habit created by this user
+    cursor.execute("""
+        SELECT is_custom, user_id 
+        FROM habits 
+        WHERE habit_id = %s
+    """, (habit_id,))
+    habit = cursor.fetchone()
+
+    if habit and habit[0] == 1 and habit[1] == session['user_id']:  
+        # habit[0] → is_custom (1 if custom)  
+        # habit[1] → user_id (who created it)  
+        cursor.execute("DELETE FROM habits WHERE habit_id = %s", (habit_id,))
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("Habit removed successfully!", "success")
+    return redirect(url_for('my_habits'))
 
 
 # ---------------------------
@@ -540,21 +776,6 @@ def add_habit(category_id):
     flash("New habit added successfully", "success")
     return redirect(url_for("open_category", category_id=category_id))
 
-@app.route("/edit_habit/<int:habit_id>", methods=["POST"])
-def edit_habit(habit_id):
-    if "loggedin" not in session:
-        return redirect(url_for("login"))
-
-    new_name = request.form["habit_name"]
-
-    cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE habits SET habit_name=%s WHERE habit_id=%s", (new_name, habit_id))
-    mysql.connection.commit()
-    cursor.close()
-
-    flash("Habit updated successfully", "info")
-    # redirect back to category
-    return redirect(request.referrer)
 
 @app.route("/create_category", methods=["GET", "POST"])
 def create_category():

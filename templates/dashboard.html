@@ -2,9 +2,9 @@
 
 {% block title %}Dashboard - Track It{% endblock %}
 
-{% block content %}
-  <h2>Select Habits</h2>
+{% block heading %}Select Habits{% endblock %}
 
+{% block content %}
   <div class="categories">
     <a href="{{ url_for('health_wellness') }}" class="category">Health & Wellness</a>
     <a href="{{ url_for('learning_growth') }}" class="category">Learning & Growth</a>
@@ -30,7 +30,7 @@
       text-align: center;
       border-radius: 15px;
       font-size: 20px;
-      font-weight: 500;
+      font-weight: 650;
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);

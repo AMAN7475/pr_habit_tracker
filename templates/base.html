@@ -25,7 +25,7 @@
       background: rgba(0, 0, 0, 0.6);
       position: relative;
     }
-
+    
     .menu-btn {
       font-size: 26px;
       cursor: pointer;
@@ -73,6 +73,7 @@
 
     .sidebar a:hover {
       background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-3px);
       color: #00ff99;
     }
 
@@ -90,18 +91,83 @@
       flex: 1;
       padding: 30px 50px;
     }
+
+    /* 🔹 FLASH MESSAGE (BOTTOM-RIGHT) */
+    #flash-container { /* 🔹 moved to bottom-right */
+      position: fixed;
+      bottom: 80px; /* 🔹 changed from top to bottom */
+      right: 30px;  /* 🔹 keep right */
+      left: 10px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column; /* 🔹 stack messages vertically */
+      align-items: flex-end;  /* 🔹 align messages to the right */
+      gap: 10px; /* 🔹 spacing between multiple messages */
+    }
+
+    .flash { /* 🔹 updated layout */
+      padding: 17px 24px; /* 🔹 slightly bigger padding */
+      border-radius: 12px; /* 🔹 slightly rounder corners */
+      font-weight: bold;
+      font-size: 16px;
+      color: #fff;
+      background: rgba(50, 120, 255, 0.9); /* 🔹 slightly transparent black bg */
+      box-shadow: 0 6px 14px rgba(0,0,0,0.4); /* 🔹 stronger shadow */
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      max-width: 300px; /* 🔹 limit width */
+      text-align: right; /* 🔹 text aligned to right */
+    }
+
+    .flash-success { background: rgba(25, 25, 255, 0.6); } 
+    .flash-error { background: rgba(255, 70, 70, 0.9); }
+
+
+    .home-btn-page {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: flex-end;
+    }  
+
+    .home-btn-page a {
+      display: inline-block;
+      text-decoration: none;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .home-btn-page a:hover {
+      background: #00ff99;
+      color: #000;
+    }
+  
+
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(20px); } /* 🔹 slide from below */
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeout {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(20px); } /* 🔹 slide down when fading */
+    }
   </style>
 </head>
 <body>
+
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <span class="close-btn" onclick="closeSidebar()">×</span>
-    <a href="#">My Profile</a>
-    <a href="#">My Stats</a>
-    <a href="#">My Habits</a>
-    <a href="#">Settings</a>
-    <a href="#">Contact Us</a>
-    <a href="/logout">Logout</a>
+    <a href="#" onclick="closeSidebar()">My Profile</a>
+    <a href="#" onclick="closeSidebar()">My Stats</a>
+    <a href="/my_habits" onclick="closeSidebar()">My Habits</a>
+    <a href="#" onclick="closeSidebar()">Settings</a>
+    <a href="#" onclick="closeSidebar()">Contact Us</a>
+    <a href="/logout" onclick="closeSidebar()">Logout</a>
   </div>
 
   <!-- Navbar -->
@@ -111,10 +177,33 @@
     <div class="username">{{ username }}</div>
   </div>
 
+  <!-- 🔹 Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div id="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
   <!-- Page-specific content -->
   <div class="page-content">
+    <!-- 🔹 Heading + Home Button in one row -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; color:#fff; font-size:24px;">
+        {% block heading %}{% endblock %}
+      </h2>
+
+      <div class="home-btn-page" style="margin:0;">
+        <a href="/dashboard">Home</a>
+      </div>
+    </div>
+
     {% block content %}{% endblock %}
   </div>
+
 
   <script>
     function openSidebar() {
@@ -123,7 +212,14 @@
     function closeSidebar() {
       document.getElementById("sidebar").style.width = "0";
     }
+
+    // 🔹 Auto-hide flash messages (bottom-right)
+    setTimeout(() => {
+      const flashContainer = document.getElementById("flash-container");
+      if (flashContainer) {
+        flashContainer.style.display = "none";
+      }
+    }, 3000);
   </script>
 </body>
 </html>
-
