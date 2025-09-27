@@ -1,60 +1,226 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard - Track It{% endblock %}
-
 {% block heading %}Select Habits{% endblock %}
 
-{% block content %}
-  <div class="categories">
-    <a href="{{ url_for('health_wellness') }}" class="category">Health & Wellness</a>
-    <a href="{{ url_for('learning_growth') }}" class="category">Learning & Growth</a>
-    <a href="{{ url_for('productivity') }}" class="category">Productivity</a>
-    <a href="{{ url_for('finance_discipline') }}" class="category">Finance & Discipline</a>
-    <a href="{{ url_for('personal_lifestyle') }}" class="category">Personal & Lifestyle</a>
-    <a href="#" class="category custom">Custom</a>
+{% block content %}<div class="categories" id="categoriesGrid">
+  {% for cat in predefined_categories %}
+    {% if cat.category_name == "Health & Wellness" %}
+      <a href="{{ url_for('health_wellness') }}" class="category">{{ cat.category_name }}</a>
+
+    {% elif cat.category_name == "Learning & Growth" %}
+      <a href="{{ url_for('learning_growth') }}" class="category">{{ cat.category_name }}</a>
+
+    {% elif cat.category_name == "Productivity" %}
+      <a href="{{ url_for('productivity') }}" class="category">{{ cat.category_name }}</a>
+
+    {% elif cat.category_name == "Finance & Discipline" %}
+      <a href="{{ url_for('finance_discipline') }}" class="category">{{ cat.category_name }}</a>
+
+    {% elif cat.category_name == "Personal & Lifestyle" %}
+      <a href="{{ url_for('personal_lifestyle') }}" class="category">{{ cat.category_name }}</a>
+
+    {% endif %}
+  {% endfor %}
+
+  {% for cat in custom_categories %}
+    <a href="{{ url_for('open_custom_category', category_id=cat.category_id) }}" class="category">{{ cat.category_name }}</a>
+  {% endfor %}
+
+  <div class="category custom" title="Create Your Own Category" id="openModalBtn">Custom</div>
+</div>
+
+
+
+<div class="modal" id="customModal">
+  <div class="modal-content">
+    <span class="close-btn" id="closeModalBtn">&times;</span>
+    <h3>Create New Category</h3>
+
+    <form id="createCategoryForm">
+      <input type="text" name="category_name" id="newCategoryInput" placeholder="Enter category name" required>
+      <button type="submit">Create</button>
+    </form>
   </div>
+</div>
+  
+<style>  
+  .categories { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 30px; 
+    max-width: 800px; 
+    margin: auto; 
+    margin-top: 50px; 
+  }
 
-  <style>
-    .categories {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 30px;
-      max-width: 800px;
-      margin: auto;
-      margin-top: 20px;
-    }
 
-    .category {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 35px;
-      text-align: center;
-      border-radius: 15px;
-      font-size: 20px;
-      font-weight: 650;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
-      color: #fff;
-      text-decoration: none;
-      display: block;
-    }
+  .category { 
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 35px; 
+    text-align: center; 
+    border-radius: 15px; 
+    font-size: 20px; 
+    font-weight: 650; 
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.4); 
+    color: #fff; 
+    text-decoration: none; 
+    display: block; 
+  }
 
-    .category:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-5px);
-      color: #00ff99;
-      text-decoration: none;
-    }
 
-    .custom {
-      background: #00ff99;
-      color: #000;
-      font-weight: bold;
-    }
+  .category:hover { 
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-5px);
+    box-shadow: 4px 5px 8px rgba(1,255,153,0.5);
+    color: #00ff99; 
+  }
 
-    .custom:hover {
-      background: #00cc77;
-      color: #000;
+
+  .custom { 
+    background: #00ff99; 
+    color: #000; 
+    font-weight: bold; 
+  }
+
+
+  .custom:hover { 
+    background: #00ff99; 
+    color: #000; 
+    transform: translateY(-5px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.9);
+  }
+
+
+  .modal { 
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0, 0, 0, 0.97); 
+    backdrop-filter: blur(1.5px); 
+    justify-content: center; 
+    align-items: center; 
+  }
+
+
+  .modal-content {
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 25px; 
+    border-radius: 15px; 
+    max-width: 95%; 
+    width: 450px; 
+    text-align: center; 
+    color: #fff; 
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.4); 
+    position: relative; 
+    border: 1px solid rgba(255,255,255,0.1); 
+  }
+
+
+  .modal-content h3 {
+    margin-bottom: 15px; 
+    color: #00ff99; 
+    font-size: 20px; 
+  }
+
+
+  .modal-content input {
+    width: 100%; 
+    height: 50px; 
+    padding:12px; border-radius: 10px; 
+    border:1px solid #00ff99; 
+    outline: none; 
+    font-size: 16px; 
+    background: rgba(255, 255, 255, 0.08); 
+    color: #fff; 
+    margin-bottom: 18px; 
+    text-align: center; 
+    box-sizing: border-box; 
+  }
+
+
+  .close-btn { 
+    position: absolute; 
+    top: 12px; 
+    right: 15px; 
+    font-size: 26px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    color: #ff4d4d; 
+    transition: transform 0.2s ease, color 0.2s ease; 
+  }
+
+
+  .close-btn:hover { 
+    color: #ff1a1a; 
+    transform: scale(1.1); 
+  }
+
+
+  .modal-content button {
+    padding: 12px 25px; 
+    border: none; 
+    border-radius: 10px; 
+    background: #00ff99; 
+    font-weight: bold; 
+    cursor: pointer; 
+  }
+
+
+  .modal-content button:hover {
+    background: #00cc77; 
+  }
+
+
+</style>
+
+<script>
+  // Open/Close Modal
+  const modal = document.getElementById("customModal");
+  const openBtn = document.getElementById("openModalBtn");
+  const closeBtn = document.getElementById("closeModalBtn");
+
+  openBtn.onclick = () => modal.style.display = "flex";
+  closeBtn.onclick = () => modal.style.display = "none";
+  window.onclick = e => { if(e.target == modal) modal.style.display = "none"; }
+
+  // Handle Form Submission via AJAX
+  const form = document.getElementById("createCategoryForm");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const categoryName = document.getElementById("newCategoryInput").value.trim();
+    if(!categoryName) return;
+
+    try {
+      const response = await fetch("{{ url_for('create_category') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category_name: categoryName })
+      });
+      const data = await response.json();
+      if(data.success) {
+        
+        const grid = document.getElementById("categoriesGrid");
+        const newTab = document.createElement("a");
+        newTab.href = data.url;
+        newTab.className = "category";
+        newTab.textContent = categoryName;
+        grid.insertBefore(newTab, openBtn); // insert before Custom button
+        modal.style.display = "none";
+        form.reset();
+      } else {
+        alert(data.message || "Error creating category");
+      }
+    } catch(err) {
+      console.error(err);
+      alert("Server error. Try again.");
     }
-  </style>
+  });
+</script>
 {% endblock %}

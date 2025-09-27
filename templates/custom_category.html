@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Learning & Growth{% endblock %}
+{% block title %}{{ category.category_name }}{% endblock %}
 
-{% block heading %}Learning & Growth{% endblock %}
+{% block heading %}{{ category.category_name }}{% endblock %}
 
 {% block content %}
   <div class="habits-grid">
@@ -10,9 +10,9 @@
       <div class="habit-card">
         <h3>{{ habit.display_name }}</h3>
 
-        <!-- Buttons inside card -->
+        
         <div class="card-actions">
-          
+          <!-- 🔹 Add form -->
           <form method="POST" action="{{ url_for('add_habit', habit_id=habit.habit_id) }}" style="display:inline;">
             <button type="submit" class="habit-btn">+ Add</button>
           </form>
@@ -20,7 +20,7 @@
           
           <button class="edit-btn" 
                   data-habit-id="{{ habit.habit_id }}" 
-                  data-habit-name="{{ habit.habit_name }}">Edit</button>
+                  data-habit-name="{{ habit.display_name }}">Edit</button>
         </div>
       </div>
     {% endfor %}
@@ -37,7 +37,7 @@
       <span class="close-btn" id="closeModal">&times;</span>
       <h3>Add New Habit</h3>
 
-      <form method="POST" action="{{ url_for('add_custom_habit', category_name='Learning & Growth') }}">
+      <form method="POST" action="{{ url_for('add_custom_category_habit', category_id=category.category_id) }}">
         <input type="text" name="habit_name" id="newHabitInput" placeholder="Not more than 30 words" required>
         <button type="submit" class="habit-btn">Save</button>
       </form>
@@ -59,7 +59,6 @@
   </div>
 
   <style>
-    
     .habits-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -149,8 +148,6 @@
 
     .add-yours:hover {
       background: #00cc77;
-      transform: translateY(-5px);
-      box-shadow: 0 6px 25px rgba(0,0,0,0.9);
     }
 
     .modal {
@@ -216,33 +213,29 @@
       color: #ff1a1a;
       transform: scale(1.1);
     }
+
   </style>
 
   <script>
-    // Add Yours Modal
-    const modal = document.getElementById("habitModal");
-    const openModal = document.getElementById("openModal");
-    const closeModal = document.getElementById("closeModal");
+    // Open Add Yours Modal
+    document.getElementById("openModal").onclick = function() {
+      document.getElementById("habitModal").style.display = "flex";
+    };
+    document.getElementById("closeModal").onclick = function() {
+      document.getElementById("habitModal").style.display = "none";
+    };
 
-    openModal.addEventListener("click", () => { modal.style.display = "flex"; });
-    closeModal.addEventListener("click", () => { modal.style.display = "none"; });
-    window.addEventListener("click", (e) => { if(e.target === modal) modal.style.display = "none"; });
-
-    // Edit Habit Modal
-    const editModal = document.getElementById("editHabitModal");
-    const closeEditModal = document.getElementById("closeEditModal");
-    const editHabitInput = document.getElementById("editHabitInput");
-    const editHabitId = document.getElementById("editHabitId");
-
+    // Open Edit Modal with habit data
     document.querySelectorAll(".edit-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        editHabitInput.value = btn.dataset.habitName;
-        editHabitId.value = btn.dataset.habitId;
-        editModal.style.display = "flex";
+      btn.addEventListener("click", function() {
+        document.getElementById("editHabitId").value = this.dataset.habitId;
+        document.getElementById("editHabitInput").value = this.dataset.habitName;
+        document.getElementById("editHabitModal").style.display = "flex";
       });
     });
 
-    closeEditModal.addEventListener("click", () => { editModal.style.display = "none"; });
-    window.addEventListener("click", (e) => { if(e.target === editModal) editModal.style.display = "none"; });
+    document.getElementById("closeEditModal").onclick = function() {
+      document.getElementById("editHabitModal").style.display = "none";
+    };
   </script>
 {% endblock %}

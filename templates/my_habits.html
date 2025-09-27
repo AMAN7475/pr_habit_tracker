@@ -3,7 +3,12 @@
 {% block title %}My Habits - Track It{% endblock %}
 
 {% block content %}
-<h2 style="color:#fff; text-align:left; margin-left:20px;">My Habits</h2>
+<h2 style="color:#fff; text-align:left; margin-left:20px;">
+  My Habits 
+  <span style="font-size:16px; color:#fff; margin-left:10px; ">
+    ({{ today }})
+  </span>
+</h2>
 
 {% if habits %}
   <div style="margin-top: 20px; max-width: 600px; margin-left:auto; margin-right:auto;">
@@ -44,12 +49,12 @@
           box-shadow:0 2px 6px rgba(0,0,0,0.25);
           transition: all 0.3s ease;
         ">
-          <h3 style="margin:0; color:#fff; font-size:16px;"> <!-- 🔹 slightly smaller text -->
+          <h3 style="margin:0; color:#fff; font-size:16px;"> 
             {{ habit.custom_name if habit.custom_name else habit.habit_name }}
           </h3>
         </div>
 
-        <!-- Remove button (same style as habit card) -->
+        <!-- Remove button -->
         <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0;">
           <button style="
             background:rgba(255, 255, 255, 0.05);

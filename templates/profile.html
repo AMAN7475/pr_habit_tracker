@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Track It{% endblock %}
+{% block heading %}My Profile{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+  <div class="profile-card">
+    <h2>{{ user.username }}</h2>
+
+    <form id="profileForm" method="POST" action="{{ url_for('update_profile') }}">
+
+      <!-- First & Last Name in one row -->
+      <div class="form-row">
+        <div class="form-group half">
+          <label>First Name</label>
+          <input type="text" name="first_name" value="{{ user.first_name }}" required>
+        </div>
+        <div class="form-group half">
+          <label>Last Name</label>
+          <input type="text" name="last_name" value="{{ user.last_name }}" required>
+        </div>
+      </div>
+
+      <!-- Contact No -->
+      <div class="form-group">
+        <label>Contact No</label>
+        <input type="text" name="contact_no" value="{{ user.mobile }}">
+      </div>
+
+      <!-- Date of Birth -->
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input type="date" name="dob" value="{{ user.dob }}">
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ user.email }}" required>
+      </div>
+
+      <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  
+  .profile-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 0px;
+    padding: 0 15px;
+  }
+
+ 
+  .profile-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px 25px 25px 25px;
+    border-radius: 15px;
+    box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 450px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: -50px; 
+    transform: scale(0.92); 
+    transform-origin: justify-content; 
+  }
+
+  .profile-card h2 {
+    color: #00ff99;
+    margin-top: 6px;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+  }
+
+ 
+  .form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .form-group.half {
+    flex: 0 0 calc(50% - 12px);
+  }
+
+  .form-group label {
+    font-size: 15px;
+    margin-bottom: 6px;
+    margin-left: 3px;
+    color: #ccc;
+  }
+
+  .form-group input {
+    width: 100%;
+    height: 50px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.40);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.20);
+    outline: none;
+    font-size: 15px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+
+  .form-group input:focus {
+    border-color: #00cc77;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .save-btn {
+    margin-top: 10px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.40);
+  }
+
+  .save-btn:hover {
+    background: #00ff99;
+    color: #000;
+    transform: translateY(-3px);
+  }
+</style>
+{% endblock %}

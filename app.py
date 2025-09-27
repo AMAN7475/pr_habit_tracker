@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 import MySQLdb.cursors
@@ -83,13 +83,13 @@ def create_tables_and_seed():
 
     mysql.connection.commit()
     cursor.close()
-    #print("✅ Tables created/verified.")
+    #print("Tables created/verified.")
 
 with app.app_context():
     try:
         create_tables_and_seed()
     except Exception as e:
-        print("⚠️ Warning (DB init failed):", e)
+        print("Warning (DB init failed):", e)
 
 
 # ============================================================
@@ -174,7 +174,7 @@ def seed_default_habits():
 
     mysql.connection.commit()
     cursor.close()
-    #print("✅ Default categories & habits seeded.")
+    #print("Default categories & habits seeded.")
 
 
 # Run DB setup + seeding
@@ -183,7 +183,7 @@ with app.app_context():
         create_tables_and_seed()
         seed_default_habits()
     except Exception as e:
-        print("⚠️ Warning (DB init/seed failed):", e)
+        print("Warning (DB init/seed failed):", e)
 
 
 # ============================================================
@@ -214,6 +214,9 @@ def create_account():
         ))
         mysql.connection.commit()
         cursor.close()
+
+        flash("Account created successfully", "success")
+
         return redirect(url_for("home"))
 
     return render_template("create_acc.html")
@@ -241,7 +244,7 @@ def login():
             session['username'] = user['username']
             return redirect(url_for("dashboard"))
         else:
-            msg = "Invalid login credentials ❌"
+            msg = "Invalid login credentials"
 
     return render_template("login.html", msg=msg)
 
@@ -256,17 +259,21 @@ def dashboard():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
+    # Predefined categories (shared for all users)
     cursor.execute("SELECT * FROM categories WHERE is_custom=0")
-    predefined = cursor.fetchall()
+    predefined_categories = cursor.fetchall()
 
+    # Custom categories created by the user
     cursor.execute("SELECT * FROM categories WHERE is_custom=1 AND user_id=%s", (user_id,))
-    custom = cursor.fetchall()
+    custom_categories = cursor.fetchall()
 
     cursor.close()
-    return render_template("dashboard.html",
-                           username=session["username"],
-                           predefined_categories=predefined,
-                           custom_categories=custom)
+    return render_template(
+        "dashboard.html",
+        username=session["username"],
+        predefined_categories=predefined_categories,
+        custom_categories=custom_categories
+    )
 
 
 #-------------------------------------------------
@@ -515,7 +522,7 @@ def add_habit(habit_id):
         mysql.connection.commit()
 
     cursor.close()
-    flash("Habit added successfully!", "success")
+    flash("Habit added successfully", "success")
     return redirect(request.referrer)
 
 
@@ -537,7 +544,7 @@ def add_custom_habit(category_name):
     category = cursor.fetchone()
     if not category:
         cursor.close()
-        flash("Category not found ❌", "danger")
+        flash("Category not found", "danger")
         return redirect(request.referrer)
 
     category_id = category["category_id"]
@@ -558,7 +565,7 @@ def add_custom_habit(category_name):
     mysql.connection.commit()
 
     cursor.close()
-    flash("Custom habit added 🎉", "success")
+    flash("Custom habit added", "success")
     return redirect(request.referrer)
 
 
@@ -591,7 +598,12 @@ def my_habits():
 
     cursor.close()
 
-    return render_template("my_habits.html", username=session["username"], habits=user_habits)
+    return render_template(
+        "my_habits.html", 
+        username=session["username"], 
+        habits=user_habits,
+        today=date.today().strftime("%d %B, %Y") 
+    )
 
 
 
@@ -633,7 +645,7 @@ def edit_habit():
     mysql.connection.commit()
     cursor.close()
 
-    flash("Habit edited successfully!", "success")
+    flash("Habit edited successfully", "success")
     return redirect(request.referrer)
 
 
@@ -666,8 +678,161 @@ def remove_habit(habit_id):
     mysql.connection.commit()
     cursor.close()
 
-    flash("Habit removed successfully!", "success")
+    flash("Habit removed successfully", "success")
     return redirect(url_for('my_habits'))
+
+#----------------------------
+# Create category
+#----------------------------
+@app.route("/create_category", methods=["POST"])
+def create_category():
+    if "loggedin" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    if not data or not data.get("category_name"):
+        return jsonify({"success": False, "message": "Category name is required"}), 400
+
+    category_name = data["category_name"].strip()
+    user_id = session["user_id"]
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+        INSERT INTO categories (category_name, is_custom, user_id)
+        VALUES (%s, %s, %s)
+    """, (category_name, True, user_id))
+    mysql.connection.commit()
+    category_id = cursor.lastrowid
+    cursor.close()
+
+    return jsonify({
+        "success": True,
+        "url": url_for("open_custom_category", category_id=category_id)
+    })
+
+
+#----------------------------
+# Route to open custom category page
+#----------------------------
+@app.route("/custom_category/<int:category_id>")
+def open_custom_category(category_id):
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Verify category belongs to user
+    cursor.execute("""
+        SELECT * FROM categories 
+        WHERE category_id=%s AND user_id=%s AND is_custom=1
+    """, (category_id, user_id))
+    category = cursor.fetchone()
+    if not category:
+        cursor.close()
+        return "Category not found or not authorized"
+
+    # Fetch habits of this category
+    cursor.execute("""
+        SELECT h.habit_id, h.habit_name, ush.custom_name
+        FROM habits h
+        LEFT JOIN user_selected_habits ush
+            ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.category_id = %s
+    """, (user_id, category_id))
+    habits = cursor.fetchall()
+    cursor.close()
+
+    for habit in habits:
+        habit["display_name"] = habit["custom_name"] if habit["custom_name"] else habit["habit_name"]
+
+    return render_template("custom_category.html",
+                           category=category,
+                           habits=habits,
+                           username=session["username"])
+
+
+#----------------------------
+#Add habit in custom category
+#----------------------------
+@app.route("/add_custom_category_habit/<int:category_id>", methods=["POST"])
+def add_custom_category_habit(category_id):
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    habit_name = request.form["habit_name"]
+
+    cursor = mysql.connection.cursor()
+
+    # Insert into habits
+    cursor.execute("""
+        INSERT INTO habits (category_id, user_id, habit_name, is_custom, is_active, created_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+    """, (category_id, user_id, habit_name, True, True))
+    mysql.connection.commit()
+    habit_id = cursor.lastrowid
+
+    # Insert into user_selected_habits
+    cursor.execute("""
+        INSERT INTO user_selected_habits (user_id, habit_id, date_added, custom_name)
+        VALUES (%s, %s, CURDATE(), %s)
+    """, (user_id, habit_id, habit_name))
+    mysql.connection.commit()
+
+    cursor.close()
+    flash("Habit added successfully", "success")
+    return redirect(url_for("open_custom_category", category_id=category_id))
+
+#----------------------------
+# profile
+#----------------------------
+
+@app.route("/profile")
+def profile():
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("SELECT username, first_name, last_name, mobile, dob, email FROM users WHERE user_id=%s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+
+    return render_template("profile.html", user=user)
+
+
+@app.route("/update_profile", methods=["POST"])
+def update_profile():
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    first_name = request.form["first_name"]
+    last_name = request.form["last_name"]
+    mobile = request.form["mobile"]
+    dob = request.form["dob"]
+    email = request.form["email"]
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET first_name=%s, last_name=%s, mobile=%s, dob=%s, email=%s 
+        WHERE user_id=%s
+    """, (first_name, last_name, mobile, dob, email, user_id))
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("Profile updated successfully", "success")
+    return redirect(url_for("profile"))
+
+#----------------------------
+# About Us
+#----------------------------
+@app.route("/about_us")
+def about_us():
+    username = session.get('username', 'Guest')
+    return render_template("about_us.html", username=username)
 
 
 # ---------------------------

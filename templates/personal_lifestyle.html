@@ -10,14 +10,14 @@
       <div class="habit-card">
         <h3>{{ habit.display_name }}</h3>
 
-        <!-- Buttons inside card -->
+        
         <div class="card-actions">
-          <!-- 🔹 Correct Add form as per app.py -->
+          
           <form method="POST" action="{{ url_for('add_habit', habit_id=habit.habit_id) }}" style="display:inline;">
             <button type="submit" class="habit-btn">+ Add</button>
           </form>
 
-          <!-- Edit button (opens modal) -->
+          
           <button class="edit-btn" 
                   data-habit-id="{{ habit.habit_id }}" 
                   data-habit-name="{{ habit.habit_name }}">Edit</button>
@@ -25,13 +25,13 @@
       </div>
     {% endfor %}
 
-    <!-- Custom Add Yours Card -->
+    
     <div class="habit-card add-yours" id="openModal">
       Add Yours
     </div>
   </div>
 
-  <!-- 🔹 Add Yours Modal -->
+  
   <div id="habitModal" class="modal">
     <div class="modal-content">
       <span class="close-btn" id="closeModal">&times;</span>
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <!-- 🔹 Edit Habit Modal -->
+  
   <div id="editHabitModal" class="modal">
     <div class="modal-content">
       <span class="close-btn" id="closeEditModal">&times;</span>
@@ -59,7 +59,7 @@
   </div>
 
   <style>
-    /* Your existing styles remain unchanged */
+    
     .habits-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -74,7 +74,7 @@
       background: rgba(255, 255, 255, 0.05);
       padding: 8px;
       border-radius: 15px;
-      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.4);
       text-align: center;
       transition: all 0.3s ease;
       min-height: 74px;
@@ -86,6 +86,7 @@
     .habit-card:hover {
       background: rgba(255, 255, 255, 0.12);
       transform: translateY(-5px);
+      box-shadow: 3px 3px 6px rgba(1,255,153,0.5); 
     }
 
     .habit-card:hover h3 {
@@ -148,6 +149,8 @@
 
     .add-yours:hover {
       background: #00cc77;
+      transform: translateY(-5px);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.9);
     }
 
     .modal {

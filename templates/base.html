@@ -22,7 +22,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 18px 30px;
-      background: rgba(0, 0, 0, 0.6);
+      background: #0d0d0d;
       position: relative;
     }
     
@@ -37,8 +37,9 @@
       color: #ccc;
     }
 
-    .logo {
+    .nav-left {
       position: absolute;
+      text-decoration: none;
       left: 50%;
       transform: translateX(-50%);
       font-size: 22px;
@@ -46,14 +47,19 @@
       color: #00ff99;
     }
 
+    .nav-left:hover {
+      color: #fff;
+      transform: translateX(-50%) scale(1.02); 
+    }
+
     /* Sidebar */
     .sidebar {
-      height: 60%;
+      height: 100%;
       width: 0;
       position: fixed;
       top: 0;
       left: 0;
-      background: rgba(0, 0, 0, 1.0);
+      background: #0d0d0d;
       overflow-x: hidden;
       transition: 0.4s;
       padding-top: 60px;
@@ -72,9 +78,9 @@
     }
 
     .sidebar a:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: #00ff99;
       transform: translateY(-3px);
-      color: #00ff99;
+      color: #000;
     }
 
     .sidebar .close-btn {
@@ -92,30 +98,30 @@
       padding: 30px 50px;
     }
 
-    /* 🔹 FLASH MESSAGE (BOTTOM-RIGHT) */
-    #flash-container { /* 🔹 moved to bottom-right */
+   
+    #flash-container { 
       position: fixed;
-      bottom: 80px; /* 🔹 changed from top to bottom */
-      right: 30px;  /* 🔹 keep right */
+      bottom: 80px; 
+      right: 30px;  
       left: 10px;
       z-index: 2000;
       display: flex;
-      flex-direction: column; /* 🔹 stack messages vertically */
-      align-items: flex-end;  /* 🔹 align messages to the right */
-      gap: 10px; /* 🔹 spacing between multiple messages */
+      flex-direction: column; 
+      align-items: flex-end;  
+      gap: 10px; 
     }
 
-    .flash { /* 🔹 updated layout */
-      padding: 17px 24px; /* 🔹 slightly bigger padding */
-      border-radius: 12px; /* 🔹 slightly rounder corners */
+    .flash { 
+      padding: 17px 24px; 
+      border-radius: 12px;
       font-weight: bold;
       font-size: 16px;
       color: #fff;
-      background: rgba(50, 120, 255, 0.9); /* 🔹 slightly transparent black bg */
-      box-shadow: 0 6px 14px rgba(0,0,0,0.4); /* 🔹 stronger shadow */
+      background: rgba(50, 120, 255, 0.9); 
+      box-shadow: 0 6px 14px rgba(0,0,0,0.4); 
       animation: fadein 0.5s, fadeout 0.5s 2.5s;
-      max-width: 300px; /* 🔹 limit width */
-      text-align: right; /* 🔹 text aligned to right */
+      max-width: 300px; 
+      text-align: right; 
     }
 
     .flash-success { background: rgba(25, 25, 255, 0.6); } 
@@ -147,13 +153,13 @@
   
 
     @keyframes fadein {
-      from { opacity: 0; transform: translateY(20px); } /* 🔹 slide from below */
+      from { opacity: 0; transform: translateY(20px); } 
       to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeout {
       from { opacity: 1; transform: translateY(0); }
-      to { opacity: 0; transform: translateY(20px); } /* 🔹 slide down when fading */
+      to { opacity: 0; transform: translateY(20px); } 
     }
   </style>
 </head>
@@ -162,18 +168,17 @@
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <span class="close-btn" onclick="closeSidebar()">×</span>
-    <a href="#" onclick="closeSidebar()">My Profile</a>
+    <a href="{{ url_for('profile') }}" onclick="closeSidebar()">My Profile</a>
     <a href="#" onclick="closeSidebar()">My Stats</a>
     <a href="/my_habits" onclick="closeSidebar()">My Habits</a>
-    <a href="#" onclick="closeSidebar()">Settings</a>
-    <a href="#" onclick="closeSidebar()">Contact Us</a>
+    <a href="{{ url_for('about_us') }}" onclick="closeSidebar()">About Us</a>
     <a href="/logout" onclick="closeSidebar()">Logout</a>
   </div>
 
   <!-- Navbar -->
   <div class="navbar">
     <div class="menu-btn" onclick="openSidebar()">☰</div>
-    <div class="logo">TRACK IT</div>
+    <a href="{{ url_for('dashboard') }}" class="nav-left brand" title="Home">TRACK IT</a>
     <div class="username">{{ username }}</div>
   </div>
 
@@ -191,14 +196,11 @@
   <!-- Page-specific content -->
   <div class="page-content">
     <!-- 🔹 Heading + Home Button in one row -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h2 style="margin:0; color:#fff; font-size:24px;">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px;">
+      <h2 style="margin:0; color:#fff; font-size:26px;">
         {% block heading %}{% endblock %}
       </h2>
-
-      <div class="home-btn-page" style="margin:0;">
-        <a href="/dashboard">Home</a>
-      </div>
     </div>
 
     {% block content %}{% endblock %}
