@@ -161,9 +161,20 @@
       <form method="POST" action="{{ url_for('login') }}">
         <div class="mb-3">
           <input type="text" class="form-control" name="email_or_username" placeholder="Email Address or Username">
+          {% if error_username %}
+            <small style="color: red; font-size: 0.8rem; padding-left: 5px;">
+              {{ error_username }}
+            </small>
+          {% endif %}
         </div>
+
         <div class="mb-3">
           <input type="password" class="form-control" name="password" placeholder="Enter your Password">
+          {% if error_password %}
+            <small style="color: red; font-size: 0.8rem; padding-left: 5px;">
+              {{ error_password }}
+            </small>
+          {% endif %}
         </div>
         <button type="submit" class="btn btn-primary w-100">Login</button>
       </form>

@@ -3,6 +3,7 @@ from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 import MySQLdb.cursors
 from datetime import datetime, date
+import re
 
 # ----------------------
 # APP SETUP
@@ -199,37 +200,189 @@ def home():
 # ---------------------------
 @app.route("/create_account", methods=["GET", "POST"])
 def create_account():
+    errors = {}
+    data = {}
+    current_year = datetime.now().year
+
     if request.method == "POST":
-        data = request.form
-        hashed_password = generate_password_hash(data['password'])
+        # Convert form to dictionary safely
+        data = request.form.to_dict()
+
+        # -------------------------
+        # First Name validation
+        # -------------------------
+        first_name = data.get("first_name", "").strip()
+        if not first_name:
+            errors["first_name"] = "Required field*"
+        elif not re.match("^[A-Za-z]+$", first_name):
+            errors["first_name"] = "Only alphabets are allowed*"    
+        elif len(first_name) < 5:
+            errors["first_name"] = "Minimum 5 characters required*"
+        elif len(first_name) > 20:
+            errors["first_name"] = "Maximum 20 characters allowed*"
+
+        # -------------------------
+        # Last Name validation
+        # -------------------------
+        last_name = data.get("last_name", "").strip()
+        if not last_name:
+            errors["last_name"] = "Required field*"
+        elif not re.match("^[A-Za-z]+$", last_name):
+            errors["last_name"] = "Only alphabets are allowed*"    
+        elif len(last_name) < 5:
+            errors["last_name"] = "Minimum 5 characters required*"
+        elif len(last_name) > 20:
+            errors["last_name"] = "Maximum 20 characters allowed*"
+
+        # -------------------------
+        # Username validation
+        # -------------------------
+        username = data.get("username", "").strip()
+        if len(username) < 5 or len(username) > 20:
+            errors["username"] = "Username should range in between 5-20 characters*"
+        elif not re.match("^[A-Za-z0-9]+$", username):
+            errors["username"] = "Only alphabets and numeral values are allowed*"
+        elif not (re.search("[A-Za-z]", username) and re.search("[0-9]", username)):
+            errors["username"] = "Username should be alphanumeric"
+        else:
+            # Check uniqueness in DB
+            cursor = mysql.connection.cursor()
+            cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+            existing_user = cursor.fetchone()
+            cursor.close()
+            if existing_user:
+                errors["username"] = "Username already taken"
+
+
+        # -------------------------
+        # DOB validation
+        # -------------------------
+        dob = data.get("dob", "").strip()
+        if not dob:
+            errors["dob"] = "Required field*"
+        else:
+            try:
+                entered_year = int(dob.split("-")[0])  # get year from YYYY-MM-DD
+                if entered_year > current_year:
+                    errors["dob"] = f"Year cannot be greater than {current_year}"
+            except Exception:
+                errors["dob"] = "Invalid date format"
+
+        # -------------------------
+        # Gender validation
+        # -------------------------
+        gender = data.get("gender", "").strip()
+        if not gender:
+            errors["gender"] = "Required field*"
+
+        # -------------------------
+        # Mobile validation
+        # -------------------------
+        mobile = data.get("mobile", "").strip()
+        if not mobile:
+            errors["mobile"] = "Required field*"
+
+        # -------------------------
+        # Email validation
+        # -------------------------
+        email = data.get("email", "").strip()
+        if not email:
+            errors["email"] = "Required field*"
+
+        # -------------------------
+        # Password validation
+        # -------------------------
+        password = data.get("password", "").strip()
+        if not password:
+            errors["password"] = "Required field*"
+
+        # -------------------------
+        # If errors → return form with errors
+        # -------------------------
+        if errors:
+            return render_template("create_acc.html", errors=errors, data=data)
+
+        # -------------------------
+        # If no errors → insert into DB
+        # -------------------------
+        hashed_password = generate_password_hash(password)
 
         cursor = mysql.connection.cursor()
         cursor.execute("""
             INSERT INTO users(first_name, last_name, username, dob, gender, mobile, email, password)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            data['first_name'], data['last_name'], data['username'],
-            data['dob'], data['gender'], data['mobile'], data['email'],
+            first_name.capitalize(),
+            last_name.capitalize(),
+            username,
+            dob,
+            gender,
+            mobile,
+            email,
             hashed_password
         ))
         mysql.connection.commit()
         cursor.close()
 
         flash("Account created successfully", "success")
-
         return redirect(url_for("home"))
 
-    return render_template("create_acc.html")
+    # -------------------------
+    # GET request → empty form
+    # -------------------------
+    return render_template("create_acc.html", errors={}, data={})
+
+
+#----------------------------
+# Check Username
+#----------------------------
+
+@app.route("/check_username", methods=["POST"])
+def check_username():
+    username = request.form.get("username", "").strip()
+    response = {"status": "ok", "message": ""}
+
+    if len(username) < 5 or len(username) > 20:
+        response["status"] = "error"
+        response["message"] = "Username should range in between 5-20 characters"
+    elif not re.match("^[A-Za-z0-9]+$", username):
+        response["status"] = "error"
+        response["message"] = "Only alphabets and numeral values are allowed"
+    elif len(re.findall(r'\d', username)) < 2:
+        response["status"] = "error"
+        response["message"] = "Username should be alphanumeric"
+    else:
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        existing_user = cursor.fetchone()
+        cursor.close()
+        if existing_user:
+            response["status"] = "error"
+            response["message"] = "Username already taken"
+
+    return jsonify(response)
+
 
 # ---------------------------
 # Login
 # ---------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    msg = ""
+    error_username = ""
+    error_password = ""
+
     if request.method == "POST":
-        email_or_username = request.form['email_or_username']
-        password = request.form['password']
+        email_or_username = request.form.get("email_or_username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        # Inline validation for empty fields
+        if not email_or_username:
+            error_username = "Required field*"
+        if not password:
+            error_password = "Required field*"
+
+        if error_username or error_password:
+            return render_template("login.html",error_username=error_username,error_password=error_password)
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
@@ -238,15 +391,23 @@ def login():
         user = cursor.fetchone()
         cursor.close()
 
-        if user and check_password_hash(user['password'], password):
-            session['loggedin'] = True
-            session['user_id'] = user['user_id']
-            session['username'] = user['username']
-            return redirect(url_for("dashboard"))
-        else:
-            msg = "Invalid login credentials"
+        if not user:
+            error_username = "User not found*"
+            return render_template("login.html",error_username=error_username,error_password=error_password)
 
-    return render_template("login.html", msg=msg)
+        if not check_password_hash(user['password'], password):
+            error_password = "Wrong Password*"
+            return render_template("login.html",error_username=error_username,error_password=error_password)
+
+        # Successful login
+        session['loggedin'] = True
+        session['user_id'] = user['user_id']
+        session['username'] = user['username']
+        return redirect(url_for("dashboard"))
+
+    return render_template("login.html",error_username=error_username,error_password=error_password)
+
+
 
 # ---------------------------
 # Dashboard

@@ -1,4 +1,4 @@
-s<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -9,14 +9,16 @@ s<!DOCTYPE html>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       background: linear-gradient(135deg, #2C3E50, #1a1a1a);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      overflow: hidden;
+      overflow-y: auto;
+      padding: 50px 0;
     }
+
 
     .container {
       display: flex;
@@ -67,7 +69,7 @@ s<!DOCTYPE html>
       border-radius: 18px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.25);
       padding: 1.9rem;
-      width: 470px; /* more compact like login */
+      width: 470px;
       transition: all .3s ease; 
       padding-top:20px;
       padding-bottom:14px;
@@ -103,8 +105,7 @@ s<!DOCTYPE html>
     .btn-primary {
       background: linear-gradient(90deg, #1ABC9C, #16a085);
       border: none;
-      border-radius: 10
-      px;
+      border-radius: 10px;
       padding: .6rem;
       font-weight: 600;
       font-size: 0.95rem;
@@ -152,37 +153,192 @@ s<!DOCTYPE html>
       <form method="POST" action="{{ url_for('create_account') }}">
         <div class="row mb-3">
           <div class="col-6">
-            <input type="text" class="form-control" name="first_name" placeholder="First Name" required>
+            <input type="text" class="form-control" name="first_name" id ="first_name" placeholder="First Name"
+                   value="{{ data.get('first_name', '') }}" minlength="5" maxlength="20">
+            <small id="first_name_error" style="color:red; font-size:0.7rem; display:none;">Only alphabets are allowed*</small>
+            {% if errors.get('first_name') %}
+              <small style="color:red; font-size:0.7rem;">{{ errors['first_name'] }}</small>
+            {% endif %}
           </div>
+
           <div class="col-6">
-            <input type="text" class="form-control" name="last_name" placeholder="Last Name" required>
+            <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name"
+                   value="{{ data.get('last_name', '') }}" minlength="5" maxlength="20">
+            <small id="last_name_error" style="color:red; font-size:0.7rem; display:none;">Only alphabets are allowed*</small>
+            {% if errors.get('last_name') %}
+              <small style="color:red; font-size:0.7rem;">{{ errors['last_name'] }}</small>
+            {% endif %}
           </div>
         </div>
+
         <div class="mb-3">
-          <input type="text" class="form-control" name="username" placeholder="Username" required>
+          <input type="text" class="form-control" name="username" id="username" placeholder="Username"
+                 value="{{ data.get('username', '') }}" maxlength="20">
+          <small id="username_error" style="color:red; font-size:0.7rem; display:none;"></small>
+          {% if errors.get('username') %}
+            <small style="color:red; font-size:0.7rem;">{{ errors['username'] }}</small>
+          {% endif %}
         </div>
+
         <div class="mb-3">
-          <input type="date" class="form-control" name="dob" required>
+          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}" max="{{ current_year }}-12-31">
+          <small id="dob-error" style="color:red; font-size:0.7rem;">
+            {% if errors.get('dob') %}
+              {{ errors['dob'] }}
+            {% endif %}
+           </small>  
         </div>
+
         <div class="mb-3">
-          <select class="form-control" name="gender" required>
+          <select class="form-control" name="gender" >
             <option value="">Select Gender</option>
-            <option>Male</option>
-            <option>Female</option>
-            <option>Other</option>
+            <option value="Male" {% if data.get('gender') == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if data.get('gender') == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if data.get('gender') == 'Other' %}selected{% endif %}>Other</option>
           </select>
+          {% if errors.get('gender') %}
+            <small style="color:red; font-size:0.7rem;">{{ errors['gender'] }}</small>
+          {% endif %}
         </div>
+
         <div class="mb-3">
-          <input type="tel" class="form-control" name="mobile" placeholder="Mobile No." required>
+          <input type="tel" class="form-control" name="mobile" placeholder="Mobile No."
+                 value="{{ data.get('mobile', '') }}">
+          {% if errors.get('mobile') %}
+            <small style="color:red; font-size:0.7rem;">{{ errors['mobile'] }}</small>
+          {% endif %}
         </div>
+
         <div class="mb-3">
-          <input type="email" class="form-control" name="email" placeholder="Email Address" required>
+          <input type="email" class="form-control" name="email" placeholder="Email Address"
+                 value="{{ data.get('email', '') }}">
+          {% if errors.get('email') %}
+            <small style="color:red; font-size:0.7rem;">{{ errors['email'] }}</small>
+          {% endif %}
         </div>
+
         <div class="mb-3">
-          <input type="password" class="form-control" name="password" placeholder="Password" required>
+          <input type="password" class="form-control" name="password" placeholder="Password">
+          {% if errors.get('password') %}
+            <small style="color:red; font-size:0.7rem;">{{ errors['password'] }}</small>
+          {% endif %}
         </div>
+
         <button type="submit" class="btn btn-primary w-100">Submit</button>
       </form>
+
+      <script>
+        // -------------------------
+        // First & Last Name Validation
+        // -------------------------
+        function allowOnlyAlphabets(inputId, errorId) {
+          const input = document.getElementById(inputId);
+          const error = document.getElementById(errorId);
+
+          input.addEventListener("input", function() {
+            let newValue = this.value.replace(/[^A-Za-z]/g, "");
+            if (this.value !== newValue) {
+              error.innerText = "Only alphabets are allowed*";
+            } else {
+              error.innerText = "";
+            }
+
+            // Update value
+            this.value = newValue;
+
+            // Auto-capitalize first letter
+            if (this.value.length > 0) {
+              this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+            }
+
+            // Show or hide error
+            error.style.display = error.innerText !== "" ? "block" : "none";
+          });
+        }
+
+        allowOnlyAlphabets("first_name", "first_name_error");
+        allowOnlyAlphabets("last_name", "last_name_error");
+
+        // -------------------------
+        // Username Validation
+        // -------------------------
+        const usernameInput = document.getElementById("username");
+        const usernameError = document.getElementById("username_error");
+
+        usernameInput.addEventListener("input", function() {
+          let val = this.value;
+
+          // Remove invalid characters (non-alphanumeric)
+          val = val.replace(/[^A-Za-z0-9]/g, "");
+          this.value = val;
+
+          let errorMsg = "";
+
+          // Rule 1: Length 5-20
+          if (val.length < 5 || val.length > 20) {
+            errorMsg = "Username should range in between 5-20 characters";
+          }
+          // Rule 2: Must contain at least 1 alphabet and 1 numeral
+          else if (!(/[A-Za-z]/.test(val) && /[0-9]/.test(val))) {
+            errorMsg = "Username must contain at least 1 alphabet and 1 numeral";
+          }
+
+          // Display error if any
+          if (errorMsg !== "") {
+            usernameError.innerText = errorMsg;
+            usernameError.style.display = "block";
+            return; // Stop AJAX call if front-end validation fails
+          } else {
+            usernameError.innerText = "";
+            usernameError.style.display = "none";
+          
+
+            // AJAX: check uniqueness
+            fetch("/check_username", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: "username=" + encodeURIComponent(val)
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === "error") {
+                usernameError.innerText = data.message;
+                usernameError.style.display = "block";
+              } else {
+                usernameError.innerText = "";
+                usernameError.style.display = "none";
+              }
+            })
+            .catch(err => {
+              console.error("Username check failed:", err);
+            });
+        }
+
+        // -------------------------
+        // DOB Validation
+        // -------------------------
+
+        document.addEventListener("DOMContentLoaded", function () {
+          const dobField = document.getElementById("dob");
+          const dobError = document.getElementById("dob-error");
+
+          dobField.addEventListener("input", function () {
+            if (!dobField.value) {
+              dobError.textContent = "Required field*";
+              return;
+            }
+
+            const today = new Date();
+            const enteredDate = new Date(dobField.value);
+
+            if (enteredDate > today) {
+              dobError.textContent = "Year cannot be greater than " + today.getFullYear();
+            } else {
+              dobError.textContent = "";
+            }
+          });
+        });
+      </script>
     </div>
   </div>
 
@@ -194,6 +350,3 @@ s<!DOCTYPE html>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-
-
