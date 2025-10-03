@@ -150,7 +150,7 @@
     <!-- Create Account card -->
     <div class="form-card">
       <h2>Create Account</h2>
-      <form method="POST" action="{{ url_for('create_account') }}">
+      <form method="POST" action="{{ url_for('create_account') }}" novalidate>
         <div class="row mb-3">
           <div class="col-6">
             <input type="text" class="form-control" name="first_name" id ="first_name" placeholder="First Name"
@@ -181,8 +181,8 @@
         </div>
 
         <div class="mb-3">
-          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}" max="{{ current_year }}-12-31">
-          <small id="dob-error" style="color:red; font-size:0.7rem;">
+          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}"  placeholder="YYYY-MM-DD" max="{{ today_date }}">
+          <small id="dob-error" style="color:red; font-size:0.7rem; display:block;">
             {% if errors.get('dob') %}
               {{ errors['dob'] }}
             {% endif %}
@@ -202,11 +202,12 @@
         </div>
 
         <div class="mb-3">
-          <input type="tel" class="form-control" name="mobile" placeholder="Mobile No."
-                 value="{{ data.get('mobile', '') }}">
+          <input type="tel" class="form-control" name="mobile" id="mobile" placeholder="Mobile No." maxlength="10" value="{{ data.get('mobile', '') }}">
+          <small id="mobile-error" style="color:red; font-size:0.7rem; display:block;">
           {% if errors.get('mobile') %}
-            <small style="color:red; font-size:0.7rem;">{{ errors['mobile'] }}</small>
+            {{ errors['mobile'] }}
           {% endif %}
+          </small>
         </div>
 
         <div class="mb-3">
@@ -317,26 +318,85 @@
         // -------------------------
         // DOB Validation
         // -------------------------
-
         document.addEventListener("DOMContentLoaded", function () {
           const dobField = document.getElementById("dob");
           const dobError = document.getElementById("dob-error");
+          const today = new Date();
+          const currentYear = today.getFullYear();
 
           dobField.addEventListener("input", function () {
-            if (!dobField.value) {
+            const val = dobField.value;
+
+            if (!val) {
               dobError.textContent = "Required field*";
               return;
             }
 
-            const today = new Date();
-            const enteredDate = new Date(dobField.value);
+            const parts = val.split("-");
+            if (parts.length === 3) {
+              const year = parseInt(parts[0]);
+              const month = parseInt(parts[1]) - 1;
+              const day = parseInt(parts[2]);
+              const enteredDate = new Date(year, month, day);
 
-            if (enteredDate > today) {
-              dobError.textContent = "Year cannot be greater than " + today.getFullYear();
-            } else {
-              dobError.textContent = "";
+              if (year > currentYear) {
+                dobError.textContent = "DOB cannot be beyond " + currentYear;
+                dobField.value = "";
+                return;
+              }
+
+              if (enteredDate > today) {
+                dobError.textContent = "Date cannot be in the future*";
+                dobField.value = "";
+                return;
+              }
             }
+
+            dobError.textContent = ""; // clear error if valid
           });
+        });
+
+        // -------------------------
+        // Mobile No Validation
+        // -------------------------
+        
+        const mobileInput = document.getElementById("mobile");
+        const mobileError = document.getElementById("mobile-error");
+
+        function validateMobile(value) {
+          if (!value) {
+            mobileError.innerText = "Required field*";
+            mobileError.style.display = "block";
+          } else if (!/^[6-9][0-9]{9}$/.test(value)) {
+            if (value.length < 10) {
+              mobileError.innerText = "Mobile No. should have 10 digits*";
+            } else {
+              mobileError.innerText = "Mobile No. must start with 6,7,8, or 9*";
+            }
+            mobileError.style.display = "block";
+          } else {
+            mobileError.style.display = "none";
+          }
+        }
+
+        // Restrict typing to digits only
+        mobileInput.addEventListener("input", function() {
+          this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10);
+          validateMobile(this.value);
+        });
+
+        // Handle paste event
+        mobileInput.addEventListener("paste", function(e) {
+          e.preventDefault();
+          let pasted = (e.clipboardData || window.clipboardData).getData("text");
+          pasted = pasted.replace(/[^0-9]/g, "").slice(0, 10);
+          this.value = pasted;
+          validateMobile(this.value);
+        });
+
+        // Optional: validate on blur
+        mobileInput.addEventListener("blur", function() {
+          validateMobile(this.value);
         });
       </script>
     </div>

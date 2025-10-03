@@ -201,8 +201,8 @@ def home():
 @app.route("/create_account", methods=["GET", "POST"])
 def create_account():
     errors = {}
-    data = {}
-    current_year = datetime.now().year
+    data = request.form
+    today = date.today()
 
     if request.method == "POST":
         # Convert form to dictionary safely
@@ -216,8 +216,8 @@ def create_account():
             errors["first_name"] = "Required field*"
         elif not re.match("^[A-Za-z]+$", first_name):
             errors["first_name"] = "Only alphabets are allowed*"    
-        elif len(first_name) < 5:
-            errors["first_name"] = "Minimum 5 characters required*"
+        elif len(first_name) < 3:
+            errors["first_name"] = "Minimum 3 characters required*"
         elif len(first_name) > 20:
             errors["first_name"] = "Maximum 20 characters allowed*"
 
@@ -229,8 +229,8 @@ def create_account():
             errors["last_name"] = "Required field*"
         elif not re.match("^[A-Za-z]+$", last_name):
             errors["last_name"] = "Only alphabets are allowed*"    
-        elif len(last_name) < 5:
-            errors["last_name"] = "Minimum 5 characters required*"
+        elif len(last_name) < 3:
+            errors["last_name"] = "Minimum 3 characters required*"
         elif len(last_name) > 20:
             errors["last_name"] = "Maximum 20 characters allowed*"
 
@@ -258,15 +258,19 @@ def create_account():
         # DOB validation
         # -------------------------
         dob = data.get("dob", "").strip()
+
         if not dob:
             errors["dob"] = "Required field*"
         else:
             try:
-                entered_year = int(dob.split("-")[0])  # get year from YYYY-MM-DD
-                if entered_year > current_year:
-                    errors["dob"] = f"Year cannot be greater than {current_year}"
-            except Exception:
+                entered_date = datetime.strptime(dob, "%Y-%m-%d").date()
+            except ValueError:
                 errors["dob"] = "Invalid date format"
+            else:
+                if entered_date.year > today.year:
+                    errors["dob"] = f"Year cannot be beyond {today.year}"
+                elif entered_date > today:
+                    errors["dob"] = "Date cannot be in the future"
 
         # -------------------------
         # Gender validation
@@ -279,8 +283,13 @@ def create_account():
         # Mobile validation
         # -------------------------
         mobile = data.get("mobile", "").strip()
+
         if not mobile:
             errors["mobile"] = "Required field*"
+
+        elif not re.fullmatch(r"^[6-9][0-9]{9}$", mobile):
+            errors["mobile"] = "Invalid Mobile No. Must be 10 digits & start with 6-9"
+            
 
         # -------------------------
         # Email validation
@@ -300,7 +309,12 @@ def create_account():
         # If errors → return form with errors
         # -------------------------
         if errors:
-            return render_template("create_acc.html", errors=errors, data=data)
+            return render_template(
+                "create_acc.html",
+                data=data,
+                errors=errors,
+                today_date=today.strftime("%Y-%m-%d")
+            )
 
         # -------------------------
         # If no errors → insert into DB
@@ -329,8 +343,13 @@ def create_account():
 
     # -------------------------
     # GET request → empty form
-    # -------------------------
-    return render_template("create_acc.html", errors={}, data={})
+    today_date = date.today().isoformat()
+    return render_template(
+        "create_acc.html", 
+        data=data if data else {},
+        errors=errors if errors else {},
+        today_date=today.strftime("%Y-%m-%d")
+    )
 
 
 #----------------------------
