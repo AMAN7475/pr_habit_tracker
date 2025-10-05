@@ -8,30 +8,43 @@
   <div class="profile-card">
     <h2>{{ user.username }}</h2>
 
-    <form id="profileForm" method="POST" action="{{ url_for('update_profile') }}">
+    <form id="profileForm" method="POST" action="{{ url_for('update_profile') }}" onsubmit="formatNamesBeforeSubmit()">
 
       <!-- First & Last Name in one row -->
       <div class="form-row">
         <div class="form-group half">
           <label>First Name</label>
-          <input type="text" name="first_name" value="{{ user.first_name }}" required>
+          <input type="text" name="first_name" id="first_name" value="{{ user.first_name }}" required  oninput="capitalizeFirstLetter(this)" minlength="3" maxlength="20">
+          {% if errors.get('first_name') %}
+            <small style="color:#f5f545; font-size:0.8rem;">{{ errors['first_name'] }}</small>
+          {% endif %}
         </div>
+
         <div class="form-group half">
           <label>Last Name</label>
-          <input type="text" name="last_name" value="{{ user.last_name }}" required>
+          <input type="text" name="last_name" id="last_name" value="{{ user.last_name }}" required oninput="capitalizeFirstLetter(this)" minlength="3" maxlength="20">
+          {% if errors.get('first_name') %}
+            <small style="color:#f5f545; font-size:0.8rem;">{{ errors['last_name'] }}</small>
+          {% endif %}
         </div>
       </div>
 
       <!-- Contact No -->
       <div class="form-group">
-        <label>Contact No</label>
-        <input type="text" name="contact_no" value="{{ user.mobile }}">
+        <label>Mobile No</label>
+        <input type="text" name="mobile" id="mobile" value="{{ user.mobile }}" maxlength="10" required>
+        <small id="mobile_error" style="color:#f5f545; font-size:0.8rem; display:block;">
+          {% if errors.get('mobile') %} {{ errors['mobile'] }} {% endif %}
+        </small>
       </div>
 
       <!-- Date of Birth -->
       <div class="form-group">
         <label>Date of Birth</label>
-        <input type="date" name="dob" value="{{ user.dob }}">
+        <input type="date" name="dob" id="dob" value="{{ user.dob }}" max="{{ current_date }}" required >
+        <small id="dob_error" style="color:#f5f545; font-size:0.8rem; display:block;">
+          {% if errors.get('dob') %} {{ errors['dob'] }} {% endif %}
+        </small>
       </div>
 
       <!-- Email -->
@@ -146,4 +159,115 @@
     transform: translateY(-3px);
   }
 </style>
+
+  <script>
+    //---------------------------
+    // Capitalize as user types
+    //---------------------------
+    function capitalizeFirstLetter(input) {
+      if (input.value.length > 0) {
+        input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase();
+      }
+    }
+
+    // Ensure names are formatted before submission
+    function formatNamesBeforeSubmit() {
+      const firstName = document.getElementById('first_name');
+      const lastName = document.getElementById('last_name');
+      capitalizeFirstLetter(firstName);
+      capitalizeFirstLetter(lastName);
+    }
+
+    //----------------------------
+    // Name Validation
+    //----------------------------
+    function capitalizeFirstLetter(input) {
+      if (input.value.length > 0) {
+        input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase();
+      }
+    }
+
+    // Validate first and last names before submission
+    function validateProfileForm() {
+      const firstName = document.getElementById("first_name").value.trim();
+      const lastName = document.getElementById("last_name").value.trim();
+
+      const namePattern = /^[A-Z][a-z]{2,19}$/; // 1 uppercase + 2–19 lowercase only
+
+      if (!namePattern.test(firstName) || !namePattern.test(lastName)) {
+        alert("First Name and Last Name must start with a capital letter, followed by lowercase letters only (3–20 total).");
+        return false;
+      }
+
+      return true;
+    }
+
+    // -------------------------
+    // Mobile No Validation
+    // -------------------------
+    const mobileInput = document.getElementById("mobile");
+    const mobileError = document.getElementById("mobile_error");
+
+    function validateMobile(value) {
+      if (!/^[6-9][0-9]{9}$/.test(value)) {
+        mobileError.innerText = "Invalid mobile no. Must be 10 digits and start with 6-9";
+        mobileError.style.display = "block";
+        return false;
+      } else {
+        mobileError.innerText = "";
+        mobileError.style.display = "none";
+        return true;
+      }
+    }
+
+    // Restrict typing to digits only and max 10 characters
+    mobileInput.addEventListener("input", function() {
+      this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10);
+      validateMobile(this.value);
+    });
+
+    // Validate before form submission
+    document.getElementById("profileForm").addEventListener("submit", function(e) {
+      if (!validateMobile(mobileInput.value)) {
+        e.preventDefault(); // stop submission if invalid
+      }
+    });
+
+    // -------------------------
+    // DOB Validation
+    // -------------------------
+    
+    const dobInput = document.getElementById("dob");
+    const dobError = document.getElementById("dob_error");
+
+    function validateDOB(value) {
+      const today = new Date();
+      const inputDate = new Date(value);
+      if (inputDate > today) {
+        // Format today in mm/dd/yyyy
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-based
+        const yyyy = today.getFullYear();
+        dobError.innerText = `DOB cannot be in the future (max ${mm}/${dd}/${yyyy})`;
+        dobError.style.display = "block";
+        return false;
+      } else {
+        dobError.innerText = "";
+        dobError.style.display = "none";
+        return true;
+      }
+    }
+
+    // Validate on change (calendar or manual input)
+    dobInput.addEventListener("change", function() {
+      validateDOB(this.value);
+    });
+
+    // Validate before form submission
+    document.getElementById("profileForm").addEventListener("submit", function(e) {
+      if (!validateDOB(dobInput.value)) {
+        e.preventDefault(); // stop submission if invalid
+      }
+    });
+  </script>
 {% endblock %}

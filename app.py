@@ -201,45 +201,58 @@ def home():
 @app.route("/create_account", methods=["GET", "POST"])
 def create_account():
     errors = {}
-    data = request.form
+    data = {}
     today = date.today()
 
     if request.method == "POST":
         # Convert form to dictionary safely
         data = request.form.to_dict()
 
-        # -------------------------
-        # First Name validation
-        # -------------------------
         first_name = data.get("first_name", "").strip()
+        last_name = data.get("last_name", "").strip()
+
+        # Ensure first letter uppercase, rest lowercase
+        first_name = first_name.capitalize()
+        last_name = last_name.capitalize()
+        data["first_name"] = first_name
+        data["last_name"] = last_name
+        
+        #--------------------------
+        # First Name Validation
+        #--------------------------
+        name_pattern = r"^[A-Z][a-z]{2,19}$"  # 1 uppercase + 2–19 lowercase only
+
         if not first_name:
             errors["first_name"] = "Required field*"
         elif not re.match("^[A-Za-z]+$", first_name):
-            errors["first_name"] = "Only alphabets are allowed*"    
-        elif len(first_name) < 3:
-            errors["first_name"] = "Minimum 3 characters required*"
-        elif len(first_name) > 20:
-            errors["first_name"] = "Maximum 20 characters allowed*"
+            errors["first_name"] = "Only alphabets are allowed*"
+        elif not re.match(name_pattern, first_name):
+            if len(first_name) < 3:
+                errors["first_name"] = "Minimum 3 characters required*"
+            else:
+                errors["first_name"] = "Invalid format — First letter capital, rest lowercase"
+            
+        #--------------------------
+        # Last Name Validation
+        #--------------------------
 
-        # -------------------------
-        # Last Name validation
-        # -------------------------
-        last_name = data.get("last_name", "").strip()
         if not last_name:
             errors["last_name"] = "Required field*"
         elif not re.match("^[A-Za-z]+$", last_name):
-            errors["last_name"] = "Only alphabets are allowed*"    
-        elif len(last_name) < 3:
-            errors["last_name"] = "Minimum 3 characters required*"
-        elif len(last_name) > 20:
-            errors["last_name"] = "Maximum 20 characters allowed*"
+            errors["last_name"] = "Only alphabets are allowed*"
+        elif not re.match(name_pattern, last_name):
+            if len(last_name) < 3:
+                errors["last_name"] = "Minimum 3 characters required*"
+            else:
+                errors["last_name"] = "Invalid format — First letter capital, rest lowercase"
+
 
         # -------------------------
         # Username validation
         # -------------------------
         username = data.get("username", "").strip()
         if len(username) < 5 or len(username) > 20:
-            errors["username"] = "Username should range in between 5-20 characters*"
+            errors["username"] = "Username length must be in between 5-20 characters*"
         elif not re.match("^[A-Za-z0-9]+$", username):
             errors["username"] = "Only alphabets and numeral values are allowed*"
         elif not (re.search("[A-Za-z]", username) and re.search("[0-9]", username)):
@@ -268,9 +281,13 @@ def create_account():
                 errors["dob"] = "Invalid date format"
             else:
                 if entered_date.year > today.year:
-                    errors["dob"] = f"Year cannot be beyond {today.year}"
+                    errors["dob"] = f"DOB cannot be in the future* (max {mm}/{dd}/{yyyy})"
                 elif entered_date > today:
-                    errors["dob"] = "Date cannot be in the future"
+                    # Convert max allowed date to mm/dd/yyyy format for error message
+                    mm = str(today.month).zfill(2)
+                    dd = str(today.day).zfill(2)
+                    yyyy = today.year
+                    errors["dob"] = f"Date cannot be in the future* (max {mm}/{dd}/{yyyy})"
 
         # -------------------------
         # Gender validation
@@ -295,15 +312,34 @@ def create_account():
         # Email validation
         # -------------------------
         email = data.get("email", "").strip()
+        email_pattern = r"^(?=.{6,30}$)[a-z0-9. ]{5,}@[a-z0-9.-]+\.[a-z]{2,}$"
+
         if not email:
             errors["email"] = "Required field*"
+        elif not re.fullmatch(email_pattern, email):
+            errors["email"] = "Invalid Email Format* (min 5 alphanumeric characters before @, max 30 total)"
+
 
         # -------------------------
         # Password validation
         # -------------------------
         password = data.get("password", "").strip()
+
         if not password:
             errors["password"] = "Required field*"
+        else:
+            # Length validation first
+            if len(password) < 8 or len(password) > 30:
+                errors["password"] = "Password must contain at least one uppercase letter, one number and one special character. And Password length must be in between 8 to 30 characters*"
+
+            # Complexity validation (uppercase + number + special char)
+            elif not re.search(r"[A-Z]", password) or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*]"):
+                errors["password"] = "Password must contain at least one uppercase letter, one number and one special character. And Password length must be in between 8 to 30 characters*"
+
+            # Optional full pattern validation (if you want to enforce all at once)
+            elif not re.fullmatch(r"^[A-Za-z\d!@#$%^&*]{8,30}$", password):
+                errors["password"] = "Invalid password format*"
+
 
         # -------------------------
         # If errors → return form with errors
@@ -326,8 +362,8 @@ def create_account():
             INSERT INTO users(first_name, last_name, username, dob, gender, mobile, email, password)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            first_name.capitalize(),
-            last_name.capitalize(),
+            first_name,
+            last_name,
             username,
             dob,
             gender,
@@ -979,7 +1015,10 @@ def profile():
     user = cursor.fetchone()
     cursor.close()
 
-    return render_template("profile.html", user=user)
+    errors = {}
+    current_date = date.today().isoformat()
+
+    return render_template("profile.html", user=user, errors=errors, current_date=current_date)
 
 
 @app.route("/update_profile", methods=["POST"])
@@ -987,13 +1026,68 @@ def update_profile():
     if "loggedin" not in session:
         return redirect(url_for("login"))
 
+    errors = {}
     user_id = session["user_id"]
-    first_name = request.form["first_name"]
-    last_name = request.form["last_name"]
-    mobile = request.form["mobile"]
-    dob = request.form["dob"]
-    email = request.form["email"]
 
+    first_name = request.form["first_name"].strip().capitalize()
+    last_name = request.form["last_name"].strip().capitalize()
+    mobile = request.form["mobile"].strip() 
+    dob = request.form["dob"]
+    email = request.form["email"].strip().lower()
+
+    # helper values
+    current_date = date.today().isoformat()
+    name_pattern = r"^[A-Z][a-z]{2,19}$"
+
+    # --- Name validation ---
+
+    if not re.match(name_pattern, first_name):
+        if len(first_name) < 3:
+            errors["first_name"] = "Minimum 3 characters required*"
+        else:
+            errors["first_name"] = "Only alphabets are allowed*"
+    
+    if not re.match(name_pattern, last_name):
+        if len(last_name) < 3:
+            errors["last_name"] = "Minimum 3 characters required*"
+        else:
+            errors["last_name"] = "Only alphabets are allowed*"
+
+    # --- Mobile validation ---
+    mobile_pattern = r"^[6-9][0-9]{9}$"
+    if mobile and not re.match(mobile_pattern, mobile):
+        errors["mobile"] = "Invalid mobile no. Must be 10 digits and start with 6-9"
+
+
+    # --- DOB validation ---
+    if dob:
+        try:
+            # Convert input from yyyy-mm-dd (standard HTML date input format) to date object
+            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+            today = date.today()
+            if dob_date > today:
+                errors["dob"] = f"DOB cannot be in the future (max {today.strftime('%d-%m-%Y')})"
+        except ValueError:
+            errors["dob"] = "Invalid date format"
+    else:
+        errors["dob"] = "Date of birth is required"
+
+    
+                
+    # If validation fails — return profile page with errors
+    if errors:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT username, first_name, last_name, mobile, dob, email FROM users WHERE user_id=%s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+
+        if user and user.get("dob"):
+            user["dob"] = datetime.strptime(str(user["dob"]), "%Y-%m-%d").strftime("%d-%m-%Y")
+        current_date = date.today().isoformat()    
+        return render_template("profile.html", user=user, errors=errors, current_date=current_date)
+
+
+    # If everything is fine — update DB
     cursor = mysql.connection.cursor()
     cursor.execute("""
         UPDATE users 
@@ -1005,6 +1099,7 @@ def update_profile():
 
     flash("Profile updated successfully", "success")
     return redirect(url_for("profile"))
+
 
 #----------------------------
 # About Us

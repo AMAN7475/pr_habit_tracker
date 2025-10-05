@@ -153,9 +153,9 @@
       <form method="POST" action="{{ url_for('create_account') }}" novalidate>
         <div class="row mb-3">
           <div class="col-6">
-            <input type="text" class="form-control" name="first_name" id ="first_name" placeholder="First Name"
-                   value="{{ data.get('first_name', '') }}" minlength="5" maxlength="20">
-            <small id="first_name_error" style="color:red; font-size:0.7rem; display:none;">Only alphabets are allowed*</small>
+            <input type="text" class="form-control" name="first_name" id="first_name" placeholder="First Name"
+                   value="{{ data.get('first_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)">
+            <small id="first_name_error" style="color:red; font-size:0.7rem; display:none;"></small>
             {% if errors.get('first_name') %}
               <small style="color:red; font-size:0.7rem;">{{ errors['first_name'] }}</small>
             {% endif %}
@@ -163,8 +163,8 @@
 
           <div class="col-6">
             <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name"
-                   value="{{ data.get('last_name', '') }}" minlength="5" maxlength="20">
-            <small id="last_name_error" style="color:red; font-size:0.7rem; display:none;">Only alphabets are allowed*</small>
+                   value="{{ data.get('last_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)">
+            <small id="last_name_error" style="color:red; font-size:0.7rem; display:none;"></small>
             {% if errors.get('last_name') %}
               <small style="color:red; font-size:0.7rem;">{{ errors['last_name'] }}</small>
             {% endif %}
@@ -181,12 +181,12 @@
         </div>
 
         <div class="mb-3">
-          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}"  placeholder="YYYY-MM-DD" max="{{ today_date }}">
+          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}" max="{{ today_date }}">
           <small id="dob-error" style="color:red; font-size:0.7rem; display:block;">
             {% if errors.get('dob') %}
               {{ errors['dob'] }}
             {% endif %}
-           </small>  
+          </small>  
         </div>
 
         <div class="mb-3">
@@ -211,54 +211,81 @@
         </div>
 
         <div class="mb-3">
-          <input type="email" class="form-control" name="email" placeholder="Email Address"
-                 value="{{ data.get('email', '') }}">
-          {% if errors.get('email') %}
-            <small style="color:red; font-size:0.7rem;">{{ errors['email'] }}</small>
-          {% endif %}
-        </div>
+          <input type="email" class="form-control" name="email" id="email" placeholder="Email Address"
+                 value="{{ data.get('email', '') }}" maxlength="30" required oninput="validateEmail(this)">
+          <small id="emailError" style="color:red; font-size:0.7rem;">       
+            {% if errors.get('email') %} {{ errors['email'] }} {% endif %}
+          </small>
+        </div>    
 
         <div class="mb-3">
-          <input type="password" class="form-control" name="password" placeholder="Password">
-          {% if errors.get('password') %}
+          <input type="password" class="form-control" name="password" placeholder="Password" maxlength="30" required oninput="validatePassword(this)">
+          <small id="passwordError" style="color:red; font-size:0.7rem; display:block;"></small>
+          <small id="passwordLengthError" style="color:red; font-size:0.7rem; display:block;"></small>
+
+          {% if errors.get('password') %} 
             <small style="color:red; font-size:0.7rem;">{{ errors['password'] }}</small>
-          {% endif %}
-        </div>
+          {% endif %}      
+        </div>    
 
         <button type="submit" class="btn btn-primary w-100">Submit</button>
       </form>
 
       <script>
-        // -------------------------
-        // First & Last Name Validation
-        // -------------------------
-        function allowOnlyAlphabets(inputId, errorId) {
-          const input = document.getElementById(inputId);
-          const error = document.getElementById(errorId);
+        //-----------------------------------
+        // First Name - Last Name Validation
+        //-----------------------------------
 
-          input.addEventListener("input", function() {
-            let newValue = this.value.replace(/[^A-Za-z]/g, "");
-            if (this.value !== newValue) {
-              error.innerText = "Only alphabets are allowed*";
-            } else {
-              error.innerText = "";
-            }
-
-            // Update value
-            this.value = newValue;
-
-            // Auto-capitalize first letter
-            if (this.value.length > 0) {
-              this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
-            }
-
-            // Show or hide error
-            error.style.display = error.innerText !== "" ? "block" : "none";
-          });
+        function capitalizeFirstLetter(input) {
+          if (input.value.length > 0) {
+            input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase();
+          }
         }
 
-        allowOnlyAlphabets("first_name", "first_name_error");
-        allowOnlyAlphabets("last_name", "last_name_error");
+        // Ensure names are formatted before submission
+        function formatNamesBeforeSubmit() {
+          const firstName = document.getElementById('first_name');
+          const lastName = document.getElementById('last_name');
+          capitalizeFirstLetter(firstName);
+          capitalizeFirstLetter(lastName);
+        }
+
+        //----------------------------
+        // Name Validation
+        //----------------------------
+        function validateProfileForm() {
+          const firstName = document.getElementById("first_name").value.trim();
+          const lastName = document.getElementById("last_name").value.trim();
+
+          const namePattern = /^[A-Z][a-z]{2,19}$/; // 1 uppercase + 2–19 lowercase only
+
+          if (!namePattern.test(firstName) || !namePattern.test(lastName)) {
+            alert("First Name and Last Name must start with a capital letter, followed by lowercase letters only (3–20 total).");
+            return false;
+          }
+
+          return true;
+        }
+
+        // Attach input event to capitalize while typing
+        document.addEventListener("DOMContentLoaded", function() {
+          const firstNameInput = document.getElementById("first_name");
+          const lastNameInput = document.getElementById("last_name");
+
+          firstNameInput.addEventListener("input", function() {
+            capitalizeFirstLetter(firstNameInput);
+          });
+
+          lastNameInput.addEventListener("input", function() {
+            capitalizeFirstLetter(lastNameInput);
+          });
+
+          // Ensure capitalization before form submission
+          const form = firstNameInput.closest("form");
+          form.addEventListener("submit", function() {
+            formatNamesBeforeSubmit();
+          });
+        });
 
         // -------------------------
         // Username Validation
@@ -321,38 +348,48 @@
         document.addEventListener("DOMContentLoaded", function () {
           const dobField = document.getElementById("dob");
           const dobError = document.getElementById("dob-error");
-          const today = new Date();
-          const currentYear = today.getFullYear();
 
-          dobField.addEventListener("input", function () {
+          function validateDOB() {
             const val = dobField.value;
-
             if (!val) {
               dobError.textContent = "Required field*";
-              return;
+              return false;
             }
 
             const parts = val.split("-");
             if (parts.length === 3) {
               const year = parseInt(parts[0]);
-              const month = parseInt(parts[1]) - 1;
+              const month = parseInt(parts[1]) - 1; // JS month is 0-based
               const day = parseInt(parts[2]);
               const enteredDate = new Date(year, month, day);
+              const today = new Date();
 
-              if (year > currentYear) {
-                dobError.textContent = "DOB cannot be beyond " + currentYear;
-                dobField.value = "";
-                return;
+              if (year > today.getFullYear()) {
+                dobError.textContent = `DOB cannot be beyond ${today.getFullYear()}`;
+                return false;
               }
 
               if (enteredDate > today) {
-                dobError.textContent = "Date cannot be in the future*";
-                dobField.value = "";
-                return;
+                const mm = String(today.getMonth() + 1).padStart(2, "0");
+                const dd = String(today.getDate()).padStart(2, "0");
+                const yyyy = today.getFullYear();
+                dobError.textContent = `Date cannot be in the future* (max ${mm}/${dd}/${yyyy})`;
+                return false;
               }
             }
 
-            dobError.textContent = ""; // clear error if valid
+            dobError.textContent = "";
+            return true;
+          }
+
+          dobField.addEventListener("change", validateDOB);
+
+          // Validate on form submit
+          const form = dobField.closest("form");
+          form.addEventListener("submit", function (e) {
+            if (!validateDOB()) {
+              e.preventDefault();
+            }
           });
         });
 
@@ -397,6 +434,113 @@
         // Optional: validate on blur
         mobileInput.addEventListener("blur", function() {
           validateMobile(this.value);
+        });
+
+        //--------------------------
+        // Email Validation
+        //--------------------------
+
+        function validateEmail(input) {
+          const email = input.value.trim();
+          const errorElement = document.getElementById("emailError");
+          const emailRegex = /^(?=.{6,30}$)[a-z0-9. ]{5,}@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+          if (email === "") {
+            errorElement.textContent = "Required field*";
+            input.style.borderColor = "red";
+          } 
+          else if (!emailRegex.test(email)) {
+            errorElement.textContent = "Invalid Email Format* (min 5 chars before @, max 30 total)";
+            input.style.borderColor = "red";
+          } 
+          else {
+            errorElement.textContent = "";
+            input.style.borderColor = "green";
+          }
+        }
+
+        //---------------------------
+        // Password Validation
+        //---------------------------
+        function validatePassword(input) {
+          const password = input.value.trim();
+          const errorRule = document.getElementById("passwordError");
+          const errorLength = document.getElementById("passwordLengthError");
+
+          // Regex: at least one uppercase, one number, one special character
+          const ruleRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]*$/;
+
+          errorRule.textContent = "";
+          errorLength.textContent = "";
+          input.style.borderColor = "";
+
+          if (password.length === 0) {
+            errorRule.textContent = "Required field*";
+            input.style.borderColor = "red";
+            return;
+          }
+
+          if (!ruleRegex.test(password)) {
+            errorRule.textContent = "Password must contain atleast one uppercase letter, one number and one special character each. And Password length must be in between 8 to 30 characters*";
+            input.style.borderColor = "red";
+          }
+
+          if (password.length < 8 || password.length > 30) {
+            errorLength.textContent = "Password must contain atleast one uppercase letter, one number and one special character. And Password length must be in between 8 to 30 characters*";
+            input.style.borderColor = "red";
+          }
+
+          if (ruleRegex.test(password) && password.length >= 8 && password.length <= 30) {
+            input.style.borderColor = "green";
+          }
+        }
+
+
+        // ---------------------------------
+        // Capital Letter Validation
+        // ---------------------------------
+        document.addEventListener("DOMContentLoaded", function() {
+          const firstName = document.getElementById("first_name");
+          const lastName = document.getElementById("last_name");
+          const firstNameError = document.getElementById("first_name_error");
+          const lastNameError = document.getElementById("last_name_error");
+
+          function checkUppercase(input, errorField) {
+            let value = input.value;
+
+            // If first character exists and is not uppercase
+            if (value.length > 0 && !/^[A-Z]/.test(value.charAt(0))) {
+              errorField.innerText = "First letter should be in Uppercase";
+              errorField.style.display = "block";
+              input.value = ""; // clear field to force correct input
+              input.style.borderColor = "red";
+            } else {
+              errorField.style.display = "none";
+              input.style.borderColor = "green";
+            }
+          }
+
+          // Run on input and paste
+          firstName.addEventListener("input", function() {
+            checkUppercase(firstName, firstNameError);
+          });
+          lastName.addEventListener("input", function() {
+            checkUppercase(lastName, lastNameError);
+          });
+
+          firstName.addEventListener("paste", function(e) {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData("text");
+            this.value = pasted;
+            checkUppercase(firstName, firstNameError);
+          });
+
+          lastName.addEventListener("paste", function(e) {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData("text");
+            this.value = pasted;
+            checkUppercase(lastName, lastNameError);
+          });
         });
       </script>
     </div>
