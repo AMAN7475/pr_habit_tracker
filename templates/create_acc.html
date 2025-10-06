@@ -136,6 +136,17 @@
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-20px); }
     }
+
+    .login-link {
+      text-decoration: none;
+      color: #1ABC9C;
+      transition: color 0.3s ease;
+    }
+
+    .login-link:hover {
+      text-decoration: underline;
+    }
+
   </style>
 </head>
 <body>
@@ -150,11 +161,11 @@
     <!-- Create Account card -->
     <div class="form-card">
       <h2>Create Account</h2>
-      <form method="POST" action="{{ url_for('create_account') }}" novalidate>
+      <form method="POST" action="{{ url_for('create_account') }}" novalidate autocomplete="off">
         <div class="row mb-3">
           <div class="col-6">
             <input type="text" class="form-control" name="first_name" id="first_name" placeholder="First Name"
-                   value="{{ data.get('first_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)">
+                   value="{{ data.get('first_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)" autocomplete="off">
             <small id="first_name_error" style="color:red; font-size:0.7rem; display:none;"></small>
             {% if errors.get('first_name') %}
               <small style="color:red; font-size:0.7rem;">{{ errors['first_name'] }}</small>
@@ -163,7 +174,7 @@
 
           <div class="col-6">
             <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name"
-                   value="{{ data.get('last_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)">
+                   value="{{ data.get('last_name', '') }}" minlength="3" maxlength="20" required oninput="capitalizeFirstLetter(this)" autocomplete="off">
             <small id="last_name_error" style="color:red; font-size:0.7rem; display:none;"></small>
             {% if errors.get('last_name') %}
               <small style="color:red; font-size:0.7rem;">{{ errors['last_name'] }}</small>
@@ -173,7 +184,7 @@
 
         <div class="mb-3">
           <input type="text" class="form-control" name="username" id="username" placeholder="Username"
-                 value="{{ data.get('username', '') }}" maxlength="20">
+                 value="{{ data.get('username', '') }}" maxlength="20" autocomplete="off">
           <small id="username_error" style="color:red; font-size:0.7rem; display:none;"></small>
           {% if errors.get('username') %}
             <small style="color:red; font-size:0.7rem;">{{ errors['username'] }}</small>
@@ -181,7 +192,7 @@
         </div>
 
         <div class="mb-3">
-          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}" max="{{ today_date }}">
+          <input type="date" class="form-control" name="dob" id="dob" value="{{ data.get('dob', '') }}" max="{{ today_date }}" autocomplete="off">
           <small id="dob-error" style="color:red; font-size:0.7rem; display:block;">
             {% if errors.get('dob') %}
               {{ errors['dob'] }}
@@ -202,7 +213,7 @@
         </div>
 
         <div class="mb-3">
-          <input type="tel" class="form-control" name="mobile" id="mobile" placeholder="Mobile No." maxlength="10" value="{{ data.get('mobile', '') }}">
+          <input type="tel" class="form-control" name="mobile" id="mobile" placeholder="Mobile No." maxlength="10" value="{{ data.get('mobile', '') }}" autocomplete="off">
           <small id="mobile-error" style="color:red; font-size:0.7rem; display:block;">
           {% if errors.get('mobile') %}
             {{ errors['mobile'] }}
@@ -212,14 +223,14 @@
 
         <div class="mb-3">
           <input type="email" class="form-control" name="email" id="email" placeholder="Email Address"
-                 value="{{ data.get('email', '') }}" maxlength="30" required oninput="validateEmail(this)">
-          <small id="emailError" style="color:red; font-size:0.7rem;">       
+                 value="{{ data.get('email', '') }}" maxlength="30" required oninput="validateEmail(this)" autocomplete="off">
+          <small id="emailError" style="color:red; font-size:0.7rem; display:block;">       
             {% if errors.get('email') %} {{ errors['email'] }} {% endif %}
           </small>
         </div>    
 
         <div class="mb-3">
-          <input type="password" class="form-control" name="password" placeholder="Password" maxlength="30" required oninput="validatePassword(this)">
+          <input type="password" class="form-control" name="password" placeholder="Password" maxlength="30" required oninput="validatePassword(this)" autocomplete="off">
           <small id="passwordError" style="color:red; font-size:0.7rem; display:block;"></small>
           <small id="passwordLengthError" style="color:red; font-size:0.7rem; display:block;"></small>
 
@@ -229,6 +240,12 @@
         </div>    
 
         <button type="submit" class="btn btn-primary w-100">Submit</button>
+        <div class="text-center mt-2">
+          <small>
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="login-link">Login here</a>
+          </small>
+        </div>
       </form>
 
       <script>
@@ -251,7 +268,7 @@
         }
 
         //----------------------------
-        // Name Validation
+        // First Name Last Name Validation
         //----------------------------
         function validateProfileForm() {
           const firstName = document.getElementById("first_name").value.trim();
@@ -440,24 +457,48 @@
         // Email Validation
         //--------------------------
 
-        function validateEmail(input) {
-          const email = input.value.trim();
-          const errorElement = document.getElementById("emailError");
-          const emailRegex = /^(?=.{6,30}$)[a-z0-9. ]{5,}@[a-z0-9.-]+\.[a-z]{2,}$/;
+        document.getElementById('email').addEventListener('input', function() {
+          const email = this.value.trim();
+          const error = document.getElementById('email_error');
+
+          // ✅ Allowed domains
+          const allowedDomains = [
+            "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
+            "icloud.com", "live.com", "aol.com", "protonmail.com", "zoho.com", "rediffmail.com"
+          ];
+
+          // ✅ Regex: min 5 chars before @, lowercase letters/numbers/._ only
+          const emailPattern = /^[a-z0-9._]{5,}@[a-z0-9.-]+\.[a-z]{2,}$/;
 
           if (email === "") {
-            errorElement.textContent = "Required field*";
-            input.style.borderColor = "red";
-          } 
-          else if (!emailRegex.test(email)) {
-            errorElement.textContent = "Invalid Email Format* (min 5 chars before @, max 30 total)";
-            input.style.borderColor = "red";
-          } 
-          else {
-            errorElement.textContent = "";
-            input.style.borderColor = "green";
+            error.style.display = "none";
+            return;
           }
-        }
+
+          if (!emailPattern.test(email)) {
+            error.textContent = "Invalid format: min 5 lowercase letters/numbers/._ before @";
+            error.style.display = "block";
+            return;
+          }
+
+          const [username, domain] = email.split('@');
+
+          // ✅ Check if domain is allowed
+          if (!allowedDomains.includes(domain)) {
+            error.textContent = "Email must end with one of: " + allowedDomains.join(', ');
+            error.style.display = "block";
+            return;
+          }
+
+          // ✅ Check for repeated characters (like aaaaa, 11111, ......)
+          if (/^(.)\1+$/.test(username)) {
+            error.textContent = "Username part cannot have all repeated characters";
+            error.style.display = "block";
+            return;
+          }
+
+          error.style.display = "none";
+        });
 
         //---------------------------
         // Password Validation

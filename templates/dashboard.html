@@ -37,8 +37,9 @@
     <span class="close-btn" id="closeModalBtn">&times;</span>
     <h3>Create New Category</h3>
 
-    <form id="createCategoryForm">
-      <input type="text" name="category_name" id="newCategoryInput" placeholder="Enter category name" required>
+    <form id="createCategoryForm" autocomplete="off">
+      <input type="text" name="category_name" id="newCategoryInput" placeholder="Enter category name" required maxlength="20" autocomplete="off">
+      <small id="categoryError" style="color:red; display:block; margin-top:5px; font-size:0.85rem;"></small>
       <button type="submit">Create</button>
     </form>
   </div>
@@ -192,10 +193,66 @@
 
   // Handle Form Submission via AJAX
   const form = document.getElementById("createCategoryForm");
+  const categoryInput = document.getElementById("newCategoryInput");
+
+  // Create an error message element
+  let errorMsg = document.createElement("small");
+  errorMsg.style.color = "red";
+  errorMsg.style.display = "block";
+  errorMsg.style.marginTop = "-12px";
+  categoryInput.parentNode.insertBefore(errorMsg, categoryInput.nextSibling);
+
+  // Function to capitalize first letter
+  function capitalizeFirstLetter(input) {
+    if(input.value.length > 0){
+      input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+    }
+  }
+
+  // Validate category input
+  function validateCategory(name) {
+    // 1. Only letters, numbers, space allowed
+    if (!/^[A-Za-z0-9 ]*$/.test(name)) {
+      errorMsg.innerText = "Only letters, numbers and space allowed";
+      return false;
+    }
+
+    // 2. Length 5-20
+    if (name.length < 5 || name.length > 20) {
+      errorMsg.innerText = "Category name should be 5 to 20 characters long";
+      return false;
+    }
+
+    // 3. First letter must be uppercase
+    if (!/^[A-Z]/.test(name)) {
+      errorMsg.innerText = "First letter must be uppercase";
+      return false;
+    }
+
+    // 4. Prevent repeated single character like aaaaaaaaa or 11111111
+    const rest = name.slice(1);
+    if (/^(.)\1+$/.test(rest)) {
+      errorMsg.innerText = "Repeated characters not allowed";
+      return false;
+    }
+
+    errorMsg.innerText = "";
+    return true;
+  }
+
+  // Force allowed characters while typing
+  categoryInput.addEventListener("input", () => {
+    // Remove invalid characters immediately
+    categoryInput.value = categoryInput.value.replace(/[^A-Za-z0-9 ]/g, '');
+    capitalizeFirstLetter(categoryInput);
+    validateCategory(categoryInput.value.trim());
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const categoryName = document.getElementById("newCategoryInput").value.trim();
-    if(!categoryName) return;
+    const categoryName = categoryInput.value.trim();
+    
+    if (!validateCategory(categoryName)) return; // stop submission if invalid
 
     try {
       const response = await fetch("{{ url_for('create_category') }}", {
@@ -205,7 +262,6 @@
       });
       const data = await response.json();
       if(data.success) {
-        
         const grid = document.getElementById("categoriesGrid");
         const newTab = document.createElement("a");
         newTab.href = data.url;
@@ -214,6 +270,7 @@
         grid.insertBefore(newTab, openBtn); // insert before Custom button
         modal.style.display = "none";
         form.reset();
+        errorMsg.innerText = "";
       } else {
         alert(data.message || "Error creating category");
       }

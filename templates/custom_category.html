@@ -37,8 +37,9 @@
       <span class="close-btn" id="closeModal">&times;</span>
       <h3>Add New Habit</h3>
 
-      <form method="POST" action="{{ url_for('add_custom_category_habit', category_id=category.category_id) }}">
-        <input type="text" name="habit_name" id="newHabitInput" placeholder="Not more than 30 words" required>
+      <form method="POST" id="addHabitForm" action="{{ url_for('add_custom_category_habit', category_id=category.category_id) }}" autocomplete="off">
+        <input type="text" name="habit_name" id="newHabitInput" placeholder="Not more than 30 words" required maxlength="30" autocomplete="off">
+        <small id="habitError" style="color:red; display:block; margin:-8px 0 10px 0; font-size:0.85rem;"></small>
         <button type="submit" class="habit-btn">Save</button>
       </form>
     </div>
@@ -217,7 +218,9 @@
   </style>
 
   <script>
-    // Open Add Yours Modal
+    // -----------------------------------------
+    // Add Yours Modal
+    // -----------------------------------------
     document.getElementById("openModal").onclick = function() {
       document.getElementById("habitModal").style.display = "flex";
     };
@@ -237,5 +240,71 @@
     document.getElementById("closeEditModal").onclick = function() {
       document.getElementById("editHabitModal").style.display = "none";
     };
-  </script>
+
+    // -------------------------------------------
+    // Add New Habit Validation
+    // -------------------------------------------
+    const habitInput = document.getElementById("newHabitInput");
+    const habitForm = document.getElementById("addHabitForm");
+    const habitError = document.getElementById("habitError");
+
+    function capitalizeFirstLetter(input) {
+      if (input.value.length > 0) {
+        input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+      }
+    }
+
+    const habitPattern = /^[A-Z][A-Za-z0-9 ]{4,29}$/; // 5-30 chars, first capital
+
+    function hasRepeatedChars(str) {
+      return /^(\w)\1+$/.test(str.replace(/\s/g, ''));
+    }
+
+    // --------------------------
+    // Real-time validation on input
+    // --------------------------
+    habitInput.addEventListener("input", function() {
+      capitalizeFirstLetter(habitInput);
+
+      const val = habitInput.value.trim();
+
+      if (val.length > 0 && val.length < 5) {
+        habitError.textContent = "Habit name should be 5 to 30 characters long";
+      } else if (!habitPattern.test(val) && val.length >= 5) {
+        habitError.textContent = "Start with capital letter. Only letters, numbers, and space allowed.";
+      } else if (hasRepeatedChars(val)) {
+        habitError.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'.";
+      } else {
+        habitError.textContent = "";
+      }
+    });
+
+    // --------------------------
+    // Submit-time validation
+    // --------------------------
+    habitForm.addEventListener("submit", function(e) {
+      const val = habitInput.value.trim();
+
+      if (val.length < 5 || val.length > 30) {
+        habitError.textContent = "Habit name should be 5 to 30 characters long";
+        e.preventDefault();
+        return;
+      }
+
+      if (!habitPattern.test(val)) {
+        habitError.textContent = "Start with capital letter. Only letters, numbers, and space allowed.";
+        e.preventDefault();
+        return;
+      }
+
+      if (hasRepeatedChars(val)) {
+        habitError.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'.";
+        e.preventDefault();
+        return;
+      }
+
+      habitError.textContent = "";
+    });
+
+  </script>  
 {% endblock %}

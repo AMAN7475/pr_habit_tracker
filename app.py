@@ -230,7 +230,9 @@ def create_account():
             if len(first_name) < 3:
                 errors["first_name"] = "Minimum 3 characters required*"
             else:
-                errors["first_name"] = "Invalid format — First letter capital, rest lowercase"
+                errors["first_name"] = "First letter must be uppercase, rest lowercase*"
+        elif re.fullmatch(r"^[A-Z](.)\1+$", first_name):  # repeated letters check
+            errors["first_name"] = "Repeated letters are not allowed*"
             
         #--------------------------
         # Last Name Validation
@@ -244,8 +246,9 @@ def create_account():
             if len(last_name) < 3:
                 errors["last_name"] = "Minimum 3 characters required*"
             else:
-                errors["last_name"] = "Invalid format — First letter capital, rest lowercase"
-
+                errors["last_name"] = "First letter must be uppercase, rest lowercase*"
+        elif re.fullmatch(r"^[A-Z](.)\1+$", last_name):  # repeated letters check
+            errors["last_name"] = "Repeated letters are not allowed*"
 
         # -------------------------
         # Username validation
@@ -311,13 +314,28 @@ def create_account():
         # -------------------------
         # Email validation
         # -------------------------
-        email = data.get("email", "").strip()
-        email_pattern = r"^(?=.{6,30}$)[a-z0-9. ]{5,}@[a-z0-9.-]+\.[a-z]{2,}$"
+        email = request.form.get("email", "").strip()
+        if email:
+            allowed_domains = (
+                "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
+                "icloud.com", "live.com", "aol.com", "protonmail.com",
+                "zoho.com", "rediffmail.com"
+            )
 
-        if not email:
+            # General pattern
+            pattern = r'^[a-z0-9._]{5,}@(' + '|'.join(re.escape(d) for d in allowed_domains) + r')$'
+            if not re.match(pattern, email):
+                errors["email"] = (
+                    "Invalid email format. Use lowercase letters, numbers, '.', or '_'. "
+                    "At least 5 characters before @, and domain must be common (e.g., gmail.com)."
+                )
+            else:
+                username = email.split('@')[0]
+                # Check if all characters are the same (e.g., aaaaa, 11111)
+                if re.fullmatch(r'(.)\1+', username):
+                    errors["email"] = "Username part cannot have all repeated characters."
+        else:
             errors["email"] = "Required field*"
-        elif not re.fullmatch(email_pattern, email):
-            errors["email"] = "Invalid Email Format* (min 5 alphanumeric characters before @, max 30 total)"
 
 
         # -------------------------
@@ -333,7 +351,7 @@ def create_account():
                 errors["password"] = "Password must contain at least one uppercase letter, one number and one special character. And Password length must be in between 8 to 30 characters*"
 
             # Complexity validation (uppercase + number + special char)
-            elif not re.search(r"[A-Z]", password) or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*]"):
+            elif not re.search(r"[A-Z]", password) or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*]",password):
                 errors["password"] = "Password must contain at least one uppercase letter, one number and one special character. And Password length must be in between 8 to 30 characters*"
 
             # Optional full pattern validation (if you want to enforce all at once)
@@ -374,7 +392,7 @@ def create_account():
         mysql.connection.commit()
         cursor.close()
 
-        flash("Account created successfully", "success")
+        flash("Account Created Successfully!", "success")
         return redirect(url_for("home"))
 
     # -------------------------
@@ -1041,17 +1059,23 @@ def update_profile():
 
     # --- Name validation ---
 
+    repeated_pattern = r"^(.)\1+$"  # matches all same character (like AAAAA or bbbbb)
+
     if not re.match(name_pattern, first_name):
         if len(first_name) < 3:
             errors["first_name"] = "Minimum 3 characters required*"
         else:
             errors["first_name"] = "Only alphabets are allowed*"
-    
+    elif re.match(repeated_pattern, first_name, re.IGNORECASE):
+        errors["first_name"] = "Name cannot have all repeated characters*"
+
     if not re.match(name_pattern, last_name):
         if len(last_name) < 3:
             errors["last_name"] = "Minimum 3 characters required*"
         else:
             errors["last_name"] = "Only alphabets are allowed*"
+    elif re.match(repeated_pattern, last_name, re.IGNORECASE):
+        errors["last_name"] = "Name cannot have all repeated characters*"
 
     # --- Mobile validation ---
     mobile_pattern = r"^[6-9][0-9]{9}$"
@@ -1081,8 +1105,6 @@ def update_profile():
         user = cursor.fetchone()
         cursor.close()
 
-        if user and user.get("dob"):
-            user["dob"] = datetime.strptime(str(user["dob"]), "%Y-%m-%d").strftime("%d-%m-%Y")
         current_date = date.today().isoformat()    
         return render_template("profile.html", user=user, errors=errors, current_date=current_date)
 
@@ -1099,6 +1121,29 @@ def update_profile():
 
     flash("Profile updated successfully", "success")
     return redirect(url_for("profile"))
+
+
+    # --- Email validation ---
+    allowed_domains = [
+        "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
+        "icloud.com", "live.com", "aol.com", "protonmail.com",
+        "zoho.com", "rediffmail.com"
+    ]
+
+    # Check pattern (5+ lowercase letters/numbers/._ before @)
+    email_pattern = r"^[a-z0-9._]{5,}@[a-z0-9.-]+\.[a-z]{2,}$"
+
+    if not re.match(email_pattern, email):
+        errors["email"] = errors["email"] = (
+                    "Invalid email format. Use lowercase letters, numbers, '.', or '_'. "
+                    "At least 5 characters before @, and domain must be common (e.g., gmail.com)."
+                )
+    else:
+        parts = email.split("@")
+        if len(parts) != 2 or parts[1] not in allowed_domains:
+            errors["email"] = f"Email must end with one of: {', '.join(allowed_domains)}"
+        elif re.match(r"^(.)\1+$", parts[0]):  # repeated characters check
+            errors["email"] = "Username part cannot have all repeated characters"
 
 
 #----------------------------

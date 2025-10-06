@@ -50,7 +50,10 @@
       <!-- Email -->
       <div class="form-group">
         <label>Email</label>
-        <input type="email" name="email" value="{{ user.email }}" required>
+        <input type="email" name="email" id="email" value="{{ user.email }}" maxlength="30" required oninput="validateEmail(this)">
+        <small id="email_error" style="color:#f5f545; font-size:0.8rem; display:block;">
+          {% if errors.get('email') %} {{ errors['email'] }} {% endif %}
+        </small>
       </div>
 
       <button type="submit" class="save-btn">Save Changes</button>
@@ -268,6 +271,54 @@
       if (!validateDOB(dobInput.value)) {
         e.preventDefault(); // stop submission if invalid
       }
+    });
+
+    // -------------------------
+    // Email Validation
+    // -------------------------
+    const emailInput = document.getElementById("email");
+    const emailError = document.getElementById("email_error");
+
+    emailInput.addEventListener("input", function() {
+      const email = this.value.trim();
+      const allowedDomains = [
+        "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
+        "icloud.com", "live.com", "aol.com", "protonmail.com",
+        "zoho.com", "rediffmail.com"
+      ];
+
+      // Regex: at least 5 lowercase letters/numbers/._ before @
+      const emailPattern = /^[a-z0-9._]{5,}@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+      if (email === "") {
+        emailError.style.display = "none";
+        return;
+      }
+
+      if (!emailPattern.test(email)) {
+        emailError.textContent =
+          "Invalid format: min 5 lowercase letters/numbers/._ before @";
+        emailError.style.display = "block";
+        return;
+      }
+
+      const [username, domain] = email.split('@');
+
+      if (!allowedDomains.includes(domain)) {
+        emailError.textContent =
+          "Email must end with one of: " + allowedDomains.join(', ');
+        emailError.style.display = "block";
+        return;
+      }
+
+      if (/^(.)\1+$/.test(username)) {
+        emailError.textContent =
+          "Username part cannot have all repeated characters";
+        emailError.style.display = "block";
+        return;
+      }
+
+      emailError.style.display = "none";
     });
   </script>
 {% endblock %}
