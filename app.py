@@ -513,6 +513,9 @@ def dashboard():
 #-------------------------------------------------
 # Habit Categories Routes
 #-------------------------------------------------
+#-------------------------------------------------
+# Health and Wellness
+#-------------------------------------------------
 
 @app.route("/health_wellness")
 def health_wellness():
@@ -523,7 +526,10 @@ def health_wellness():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
     # Get category_id
-    cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Health & Wellness",))
+    cursor.execute(
+        "SELECT category_id FROM categories WHERE category_name = %s",
+        ("Health & Wellness",)
+    )
     category = cursor.fetchone()
     if not category:
         cursor.close()
@@ -531,31 +537,94 @@ def health_wellness():
 
     category_id = category["category_id"]
 
-    # Fetch habits along with user custom_name if exists
+    # Fetch all habits
     cursor.execute("""
-        SELECT h.habit_id, 
-               h.habit_name, 
-               ush.custom_name
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               CASE 
+                   WHEN ush.habit_id IS NOT NULL THEN 1 
+                   ELSE 0 
+               END AS in_user_habits
         FROM habits h
-        LEFT JOIN user_selected_habits ush 
+        LEFT JOIN user_selected_habits ush
             ON h.habit_id = ush.habit_id AND ush.user_id = %s
         WHERE h.category_id = %s
     """, (user_id, category_id))
+
     habits = cursor.fetchall()
     cursor.close()
 
     # Pass the name to display: custom_name if exists, else default habit_name
     for habit in habits:
         habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
+        habit['added'] = habit['in_user_habits']  # 1 if added, 0 if not
 
     return render_template(
         "health_wellness.html",
         username=session["username"],
-        habits=habits
+        habits=habits,
+        category=category
     )
 
 
+#-------------------------------------------------
+# Remove Button for Health & Wellness
+#-------------------------------------------------
 
+@app.route("/remove_health_habit/<int:habit_id>", methods=["POST"])
+def remove_health_habit(habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch habit info
+    cursor.execute("""
+        SELECT * FROM habits h
+        LEFT JOIN user_selected_habits ush
+        ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.habit_id = %s
+    """, (user_id, habit_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found", "error")
+        return redirect(url_for("health_wellness"))
+
+    # Case 1: Custom habit
+    if habit["is_custom"]:
+        # Delete from user_selected_habits and habits
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        cursor.execute("DELETE FROM habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Custom habit removed successfully"
+
+    # Case 2: Predefined habit edited
+    elif habit.get("custom_name"):
+        # Remove from user habits & reset edited name
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit Reverted to predefined one."
+
+    # Case 3: Predefined habit untouched
+    else:
+        # Remove from user habits only
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit removed from my habits"
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash(message, "success")
+    return redirect(url_for("health_wellness"))
+
+
+
+#-------------------------------------------------
+# Learning and Growth
+#-------------------------------------------------
 
 
 @app.route("/learning_growth")
@@ -567,38 +636,104 @@ def learning_growth():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
     # Get category_id
-    cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Learning & Growth",))
+    cursor.execute(
+        "SELECT category_id FROM categories WHERE category_name = %s",
+        ("Learning & Growth",)
+    )
     category = cursor.fetchone()
-
     if not category:
         cursor.close()
         return "Category 'Learning & Growth' not found in DB"
 
     category_id = category["category_id"]
 
-    # Fetch habits along with user custom_name if exists
+    # Fetch all habits
     cursor.execute("""
-        SELECT h.habit_id, 
-               h.habit_name, 
-               ush.custom_name
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               CASE 
+                   WHEN ush.habit_id IS NOT NULL THEN 1 
+                   ELSE 0 
+               END AS in_user_habits
         FROM habits h
-        LEFT JOIN user_selected_habits ush 
+        LEFT JOIN user_selected_habits ush
             ON h.habit_id = ush.habit_id AND ush.user_id = %s
         WHERE h.category_id = %s
     """, (user_id, category_id))
+
     habits = cursor.fetchall()
     cursor.close()
 
     # Pass the name to display: custom_name if exists, else default habit_name
     for habit in habits:
         habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
+        habit['added'] = habit['in_user_habits']  # 1 if added, 0 if not
 
     return render_template(
         "learning_growth.html",
         username=session["username"],
-        habits=habits
+        habits=habits,
+        category=category
     )
 
+#-------------------------------------------------
+# Remove Button for Learning & Growth
+#-------------------------------------------------
+
+@app.route("/remove_learning_habit/<int:habit_id>", methods=["POST"])
+def remove_learning_habit(habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch habit info
+    cursor.execute("""
+        SELECT * FROM habits h
+        LEFT JOIN user_selected_habits ush
+        ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.habit_id = %s
+    """, (user_id, habit_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found", "error")
+        return redirect(url_for("learning_growth"))
+
+    # Case 1: Custom habit
+    if habit["is_custom"]:
+        # Delete from user_selected_habits and habits
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        cursor.execute("DELETE FROM habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Custom habit removed successfully"
+
+    # Case 2: Predefined habit edited
+    elif habit.get("custom_name"):
+        # Remove from user habits & reset edited name
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit Reverted to predefined one."
+
+    # Case 3: Predefined habit untouched
+    else:
+        # Remove from user habits only
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit removed from my habits"
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash(message, "success")
+    return redirect(url_for("learning_growth"))
+
+
+
+#-------------------------------------------------
+# Productivity
+#-------------------------------------------------
 
 
 @app.route("/productivity")
@@ -610,38 +745,103 @@ def productivity():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
     # Get category_id
-    cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Productivity",))
+    cursor.execute(
+        "SELECT category_id FROM categories WHERE category_name = %s",
+        ("Productivity",)
+    )
     category = cursor.fetchone()
-
     if not category:
         cursor.close()
         return "Category 'Productivity' not found in DB"
 
     category_id = category["category_id"]
 
-    # Fetch habits along with user custom_name if exists
+    # Fetch all habits
     cursor.execute("""
-        SELECT h.habit_id, 
-               h.habit_name, 
-               ush.custom_name
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               CASE 
+                   WHEN ush.habit_id IS NOT NULL THEN 1 
+                   ELSE 0 
+               END AS in_user_habits
         FROM habits h
-        LEFT JOIN user_selected_habits ush 
+        LEFT JOIN user_selected_habits ush
             ON h.habit_id = ush.habit_id AND ush.user_id = %s
         WHERE h.category_id = %s
     """, (user_id, category_id))
+
     habits = cursor.fetchall()
     cursor.close()
 
     # Pass the name to display: custom_name if exists, else default habit_name
     for habit in habits:
         habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
+        habit['added'] = habit['in_user_habits']  # 1 if added, 0 if not
 
     return render_template(
         "productivity.html",
         username=session["username"],
-        habits=habits
+        habits=habits,
+        category=category
     )
 
+
+#-------------------------------------------------
+# Remove Button for Productivity
+#-------------------------------------------------
+
+@app.route("/remove_productivity_habit/<int:habit_id>", methods=["POST"])
+def remove_productivity_habit(habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch habit info
+    cursor.execute("""
+        SELECT * FROM habits h
+        LEFT JOIN user_selected_habits ush
+        ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.habit_id = %s
+    """, (user_id, habit_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found", "error")
+        return redirect(url_for("productivity"))
+
+    # Case 1: Custom habit
+    if habit["is_custom"]:
+        # Delete from user_selected_habits and habits
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        cursor.execute("DELETE FROM habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Custom habit removed successfully"
+
+    # Case 2: Predefined habit edited
+    elif habit.get("custom_name"):
+        # Remove from user habits & reset edited name
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit Reverted to predefined one."
+
+    # Case 3: Predefined habit untouched
+    else:
+        # Remove from user habits only
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit removed from my habits"
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash(message, "success")
+    return redirect(url_for("productivity"))
+
+#-------------------------------------------------
+# Finance & Discipline
+#-------------------------------------------------
 
 
 @app.route("/finance_discipline")
@@ -652,39 +852,104 @@ def finance_discipline():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Fetch the Finance & Discipline category_id
-    cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", ("Finance & Discipline",))
+    # Get category_id
+    cursor.execute(
+        "SELECT category_id FROM categories WHERE category_name = %s",
+        ("Finance & Discipline",)
+    )
     category = cursor.fetchone()
-
     if not category:
         cursor.close()
         return "Category 'Finance & Discipline' not found in DB"
 
     category_id = category["category_id"]
 
-    # Fetch habits along with user custom_name if exists
+    # Fetch all habits
     cursor.execute("""
-        SELECT h.habit_id, 
-               h.habit_name, 
-               ush.custom_name
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               CASE 
+                   WHEN ush.habit_id IS NOT NULL THEN 1 
+                   ELSE 0 
+               END AS in_user_habits
         FROM habits h
-        LEFT JOIN user_selected_habits ush 
+        LEFT JOIN user_selected_habits ush
             ON h.habit_id = ush.habit_id AND ush.user_id = %s
         WHERE h.category_id = %s
     """, (user_id, category_id))
+
     habits = cursor.fetchall()
     cursor.close()
 
     # Pass the name to display: custom_name if exists, else default habit_name
     for habit in habits:
         habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
+        habit['added'] = habit['in_user_habits']  # 1 if added, 0 if not
 
     return render_template(
         "finance_discipline.html",
         username=session["username"],
-        habits=habits
-    )   
+        habits=habits,
+        category=category
+    )
 
+
+#-------------------------------------------------
+# Remove Button for Finance & Discipline
+#-------------------------------------------------
+
+@app.route("/remove_finance_habit/<int:habit_id>", methods=["POST"])
+def remove_finance_habit(habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch habit info
+    cursor.execute("""
+        SELECT * FROM habits h
+        LEFT JOIN user_selected_habits ush
+        ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.habit_id = %s
+    """, (user_id, habit_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found", "error")
+        return redirect(url_for("finance_discipline"))
+
+    # Case 1: Custom habit
+    if habit["is_custom"]:
+        # Delete from user_selected_habits and habits
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        cursor.execute("DELETE FROM habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Custom habit removed successfully"
+
+    # Case 2: Predefined habit edited
+    elif habit.get("custom_name"):
+        # Remove from user habits & reset edited name
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit Reverted to predefined one."
+
+    # Case 3: Predefined habit untouched
+    else:
+        # Remove from user habits only
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit removed from my habits"
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash(message, "success")
+    return redirect(url_for("finance_discipline"))
+
+#-------------------------------------------------
+# Personal & Lifestyle
+#-------------------------------------------------
 
 
 @app.route("/personal_lifestyle")
@@ -695,40 +960,100 @@ def personal_lifestyle():
     user_id = session["user_id"]
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-
-    # Fetch the Personal & lifestyle category_id
-    cursor.execute("SELECT category_id FROM categories WHERE category_name=%s", ("Personal & Lifestyle",)) 
+    # Get category_id
+    cursor.execute(
+        "SELECT category_id FROM categories WHERE category_name = %s",
+        ("Personal & Lifestyle",)
+    )
     category = cursor.fetchone()
-
     if not category:
         cursor.close()
         return "Category 'Personal & Lifestyle' not found in DB"
 
     category_id = category["category_id"]
-    
-    # Fetch habits along with user custom_name if exists
+
+    # Fetch all habits
     cursor.execute("""
-        SELECT h.habit_id, 
-               h.habit_name, 
-               ush.custom_name
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               CASE 
+                   WHEN ush.habit_id IS NOT NULL THEN 1 
+                   ELSE 0 
+               END AS in_user_habits
         FROM habits h
-        LEFT JOIN user_selected_habits ush 
+        LEFT JOIN user_selected_habits ush
             ON h.habit_id = ush.habit_id AND ush.user_id = %s
         WHERE h.category_id = %s
     """, (user_id, category_id))
+
     habits = cursor.fetchall()
     cursor.close()
 
     # Pass the name to display: custom_name if exists, else default habit_name
     for habit in habits:
         habit['display_name'] = habit['custom_name'] if habit['custom_name'] else habit['habit_name']
+        habit['added'] = habit['in_user_habits']  # 1 if added, 0 if not
 
     return render_template(
         "personal_lifestyle.html",
         username=session["username"],
-        habits=habits
+        habits=habits,
+        category=category
     )
 
+
+#-------------------------------------------------
+# Remove Button for Personal & Lifestyle
+#-------------------------------------------------
+
+@app.route("/remove_lifestyle_habit/<int:habit_id>", methods=["POST"])
+def remove_lifestyle_habit(habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch habit info
+    cursor.execute("""
+        SELECT * FROM habits h
+        LEFT JOIN user_selected_habits ush
+        ON h.habit_id = ush.habit_id AND ush.user_id = %s
+        WHERE h.habit_id = %s
+    """, (user_id, habit_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found", "error")
+        return redirect(url_for("personal_lifestyle"))
+
+    # Case 1: Custom habit
+    if habit["is_custom"]:
+        # Delete from user_selected_habits and habits
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        cursor.execute("DELETE FROM habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Custom habit removed successfully"
+
+    # Case 2: Predefined habit edited
+    elif habit.get("custom_name"):
+        # Remove from user habits & reset edited name
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit Reverted to predefined one."
+
+    # Case 3: Predefined habit untouched
+    else:
+        # Remove from user habits only
+        cursor.execute("DELETE FROM user_selected_habits WHERE habit_id=%s AND user_id=%s", (habit_id, user_id))
+        message = "Habit removed from my habits"
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash(message, "success")
+    return redirect(url_for("personal_lifestyle"))
 
 
 # ---------------------------
@@ -799,7 +1124,7 @@ def add_custom_habit(category_name):
     mysql.connection.commit()
 
     cursor.close()
-    flash("Custom habit added", "success")
+    flash("Custom habit added successfully", "success")
     return redirect(request.referrer)
 
 
@@ -879,7 +1204,7 @@ def edit_habit():
     mysql.connection.commit()
     cursor.close()
 
-    flash("Habit edited successfully", "success")
+    flash("Habit edited and added successfully", "success")
     return redirect(request.referrer)
 
 
@@ -938,6 +1263,7 @@ def create_category():
     mysql.connection.commit()
     category_id = cursor.lastrowid
     cursor.close()
+
 
     return jsonify({
         "success": True,
@@ -1017,6 +1343,50 @@ def add_custom_category_habit(category_id):
     cursor.close()
     flash("Habit added successfully", "success")
     return redirect(url_for("open_custom_category", category_id=category_id))
+
+
+#----------------------------
+# Remove habit from custom category
+#----------------------------
+@app.route("/remove_custom_habit/<int:category_id>/<int:habit_id>", methods=["POST"])
+def remove_custom_habit(category_id, habit_id):
+    if "loggedin" not in session:
+        flash("Not logged in", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor()
+
+    # Verify habit belongs to user & category
+    cursor.execute("""
+        SELECT * FROM habits 
+        WHERE habit_id=%s AND category_id=%s AND user_id=%s AND is_custom=1
+    """, (habit_id, category_id, user_id))
+    habit = cursor.fetchone()
+
+    if not habit:
+        cursor.close()
+        flash("Habit not found or unauthorized", "error")
+        return redirect(url_for("open_custom_category", category_id=category_id))
+
+    # Delete from user_selected_habits
+    cursor.execute("""
+        DELETE FROM user_selected_habits 
+        WHERE habit_id=%s AND user_id=%s
+    """, (habit_id, user_id))
+
+    # Delete from habits
+    cursor.execute("""
+        DELETE FROM habits 
+        WHERE habit_id=%s AND user_id=%s
+    """, (habit_id, user_id))
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("Habit removed successfully", "success")
+    return redirect(url_for("open_custom_category", category_id=category_id))
+
 
 #----------------------------
 # profile

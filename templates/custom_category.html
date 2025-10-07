@@ -7,20 +7,21 @@
 {% block content %}
   <div class="habits-grid">
     {% for habit in habits %}
-      <div class="habit-card">
+      <div class="habit-card" id="habit-{{ habit.habit_id }}">
         <h3>{{ habit.display_name }}</h3>
 
         
         <div class="card-actions">
           <!-- 🔹 Add form -->
-          <form method="POST" action="{{ url_for('add_habit', habit_id=habit.habit_id) }}" style="display:inline;">
-            <button type="submit" class="habit-btn">+ Add</button>
-          </form>
-
-          
+         
           <button class="edit-btn" 
                   data-habit-id="{{ habit.habit_id }}" 
                   data-habit-name="{{ habit.display_name }}">Edit</button>
+
+
+          <form method="POST" action="{{ url_for('remove_custom_habit', category_id=category.category_id, habit_id=habit.habit_id) }}" style="display:inline;">
+              <button type="submit" class="remove-btn">Remove</button>
+          </form>
         </div>
       </div>
     {% endfor %}
@@ -51,11 +52,13 @@
       <span class="close-btn" id="closeEditModal">&times;</span>
       <h3>Edit Habit</h3>
 
-      <form method="POST" id="editHabitForm" action="{{ url_for('edit_habit') }}">
-        <input type="text" name="custom_name" id="editHabitInput" placeholder="Rename habit" required>
+      <form method="POST" id="editHabitForm" action="{{ url_for('edit_habit') }}" autocomplete="off">
+        <input type="text" name="custom_name" id="editHabitInput" placeholder="Rename habit" required maxlength="30" autocomplete="off">
+        <small id="editHabitError" style="color:red; display:block; margin:-8px 0 10px 0; font-size:0.85rem;"></small>
         <input type="hidden" name="habit_id" id="editHabitId">
         <button type="submit" class="habit-btn">Save</button>
       </form>
+
     </div>
   </div>
 
@@ -71,7 +74,7 @@
     }
 
     .habit-card {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(10, 10, 50, 0.7);
       padding: 8px;
       border-radius: 15px;
       box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.4);
@@ -84,13 +87,12 @@
     }
 
     .habit-card:hover {
-      background: rgba(255, 255, 255, 0.12);
       transform: translateY(-5px);
-      box-shadow: 3px 3px 6px rgba(1,255,153,0.5);
+      box-shadow: 3px 3px 6px rgba(80,145,250,0.5);
     }
 
     .habit-card:hover h3 {
-      color: #00ff99;
+      color: rgba(246,231,124,2);
     }
 
     .habit-card h3 {
@@ -111,7 +113,7 @@
       margin-bottom: 2.5px;
     }
 
-    .habit-btn, .edit-btn {
+    .habit-btn {
       background: rgba(255, 255, 255, 0.05);
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
       color: #fff;
@@ -125,9 +127,28 @@
       flex-shrink: 0;
     }
 
-    .habit-btn:hover, .edit-btn:hover {
-      background: #00ff99;
-      color: #000;
+    .habit-btn:hover {
+      background: #13c634;
+      color: #fff;
+    }
+
+    .edit-btn {
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .edit-btn:hover {
+      background: #4a96ff;
+      color: #fff;
     }
 
     .add-yours {
@@ -215,6 +236,26 @@
       transform: scale(1.1);
     }
 
+    .remove-btn {
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .remove-btn:hover {
+      background: #ff4d4d;
+      color: #fff;
+    }
+
+
   </style>
 
   <script>
@@ -257,8 +298,12 @@
     const habitPattern = /^[A-Z][A-Za-z0-9 ]{4,29}$/; // 5-30 chars, first capital
 
     function hasRepeatedChars(str) {
-      return /^(\w)\1+$/.test(str.replace(/\s/g, ''));
+      // Remove spaces and ignore case
+      const cleanStr = str.replace(/\s/g, '').toLowerCase();
+      // Match any character repeated 5+ times consecutively
+      return /(.)\1{4,}/.test(cleanStr);
     }
+
 
     // --------------------------
     // Real-time validation on input
@@ -271,7 +316,7 @@
       if (val.length > 0 && val.length < 5) {
         habitError.textContent = "Habit name should be 5 to 30 characters long";
       } else if (!habitPattern.test(val) && val.length >= 5) {
-        habitError.textContent = "Start with capital letter. Only letters, numbers, and space allowed.";
+        habitError.textContent = "Start with capital letter. Only letters, numbers and space allowed.";
       } else if (hasRepeatedChars(val)) {
         habitError.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'.";
       } else {
@@ -298,7 +343,7 @@
       }
 
       if (hasRepeatedChars(val)) {
-        habitError.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'.";
+        habitError.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'";
         e.preventDefault();
         return;
       }
@@ -306,5 +351,71 @@
       habitError.textContent = "";
     });
 
+    // -------------------------------------------
+    // Remove Habit (Custom Category)
+    // -------------------------------------------
+    document.querySelectorAll(".remove-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const habitId = this.dataset.habitId;
+        const categoryId = this.dataset.categoryId;
+        const habitCard = document.getElementById(`habit-${habitId}`);
+
+        if (!habitCard) return;
+
+        // Smooth fade-out animation
+        habitCard.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+        habitCard.style.opacity = "0";
+        habitCard.style.transform = "scale(0.9)";
+
+        // Remove from DOM after animation
+        setTimeout(() => {
+          habitCard.remove();
+
+          // Send POST request to remove habit in backend
+          fetch(`/remove_custom_habit/${categoryId}/${habitId}`, { method: "POST" });
+        }, 300);
+      });
+    });
+
+
+    // --------------------------
+    // Edit Habit Validation
+    // --------------------------
+    const editHabitInput = document.getElementById("editHabitInput");
+    const editHabitForm = document.getElementById("editHabitForm");
+    const editHabitError = document.getElementById("editHabitError");
+
+    function validateHabitInput(inputEl, errorEl) {
+      // Capitalize first letter
+      if (inputEl.value.length > 0) {
+        inputEl.value = inputEl.value.charAt(0).toUpperCase() + inputEl.value.slice(1);
+      }
+      
+      const val = inputEl.value.trim();
+
+      if (val.length < 5 || val.length > 30) {
+        errorEl.textContent = "Habit name should be 5 to 30 characters long";
+        return false;
+      }
+      if (!habitPattern.test(val)) {
+        errorEl.textContent = "Start with capital letter. Only letters, numbers and space allowed.";
+        return false;
+      }
+      if (hasRepeatedChars(val)) {
+        errorEl.textContent = "Do not enter repeated characters like 'aaaaa' or '11111'";
+        return false;
+      }
+
+      errorEl.textContent = "";
+      return true;
+    }
+
+    // Real-time input validation
+    editHabitInput.addEventListener("input", () => validateHabitInput(editHabitInput, editHabitError));
+
+    // Form submit validation
+    editHabitForm.addEventListener("submit", function(e) {
+      if (!validateHabitInput(editHabitInput, editHabitError)) e.preventDefault();
+    });
   </script>  
 {% endblock %}
