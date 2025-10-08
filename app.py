@@ -82,6 +82,21 @@ def create_tables_and_seed():
     )
     """)
 
+    # daily_task_status table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS daily_task_status (
+        task_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        habit_id INT NOT NULL,
+        everyday_date DATE NOT NULL,
+        status ENUM('Completed', 'Missed', 'Skipped', 'Pending') DEFAULT 'Pending',
+        marked_time DATETIME DEFAULT NULL,
+        UNIQUE KEY unique_user_habit_date (user_id, habit_id, everyday_date),
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        FOREIGN KEY (habit_id) REFERENCES habits(habit_id) ON DELETE CASCADE
+    )
+    """)
+
     mysql.connection.commit()
     cursor.close()
     #print("Tables created/verified.")
@@ -1129,7 +1144,7 @@ def add_custom_habit(category_name):
 
 
 # ---------------------------
-# My Habits Page
+# My Habits Page 
 # ---------------------------
 @app.route("/my_habits")
 def my_habits():
@@ -1137,9 +1152,11 @@ def my_habits():
         return redirect(url_for("login"))
 
     user_id = session["user_id"]
+    today = date.today()
+
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Fetch all user-selected habits (predefined + custom)
+    # STEP 1: Fetch all user-selected habits (predefined + custom)
     cursor.execute("""
         SELECT ush.entry_id,
                h.habit_id, 
@@ -1155,15 +1172,74 @@ def my_habits():
     """, (user_id,))
     user_habits = cursor.fetchall()
 
+    # STEP 2: Ensure today's records exist in daily_task_status
+    for habit in user_habits:
+        habit_id = habit["habit_id"]
+
+        cursor.execute("""
+            SELECT * FROM daily_task_status
+            WHERE user_id = %s AND habit_id = %s AND everyday_date = %s
+        """, (user_id, habit_id, today))
+        existing = cursor.fetchone()
+
+        if not existing:
+            cursor.execute("""
+                INSERT INTO daily_task_status (user_id, habit_id, everyday_date, status)
+                VALUES (%s, %s, %s, 'Pending')
+            """, (user_id, habit_id, today))
+            mysql.connection.commit()
+
+    # STEP 3: Fetch habits with today's daily status
+    cursor.execute("""
+        SELECT h.habit_id,
+               h.habit_name,
+               ush.custom_name,
+               c.category_name,
+               dts.status 
+        FROM user_selected_habits ush
+        JOIN habits h ON ush.habit_id = h.habit_id
+        JOIN categories c ON h.category_id = c.category_id
+        JOIN daily_task_status dts 
+          ON dts.habit_id = h.habit_id 
+         AND dts.user_id = ush.user_id
+         AND dts.everyday_date = %s
+        WHERE ush.user_id = %s
+        ORDER BY ush.date_added DESC
+    """, (today, user_id))
+    habits_with_status = cursor.fetchall()
+
     cursor.close()
 
     return render_template(
-        "my_habits.html", 
-        username=session["username"], 
-        habits=user_habits,
-        today=date.today().strftime("%d %B, %Y") 
+        "my_habits.html",
+        username=session["username"],
+        habits=habits_with_status,
+        today=today.strftime("%d %B, %Y")
     )
 
+# ---------------------------
+# Update Habit Status (AJAX)
+# ---------------------------
+@app.route("/update_habit_status", methods=["POST"])
+def update_habit_status():
+    if "loggedin" not in session:
+        return jsonify(success=False, message="Not logged in"), 401
+
+    data = request.get_json()
+    habit_id = data.get("habit_id")
+    status = data.get("status")
+    user_id = session["user_id"]
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+        UPDATE daily_task_status
+        SET status = %s, marked_time = NOW()
+        WHERE user_id = %s AND habit_id = %s AND everyday_date = CURDATE()
+    """, ("Completed", user_id, habit_id))
+    mysql.connection.commit()
+    cursor.close()
+
+    return jsonify(success=True, message=f"Status updated to {status}")
 
 
 #----------------------------

@@ -5,7 +5,7 @@
 {% block content %}
 <h2 style="color:#fff; text-align:left; margin-left:20px;">
   My Habits 
-  <span style="font-size:16px; color:#fff; margin-left:10px; ">
+  <span style="font-size:16px; color:#fff; margin-left:10px;">
     ({{ today }})
   </span>
 </h2>
@@ -13,50 +13,40 @@
 {% if habits %}
   <div style="margin-top: 20px; max-width: 600px; margin-left:auto; margin-right:auto;">
     {% for habit in habits %}
-      <div style="
-        display:flex; 
-        align-items:center; 
-        justify-content:space-between;
-        margin:14px 0;
-        gap:12px;
-      ">
+      <!-- Habit container -->
+      <div class="habit-item" style="display:flex; align-items:center; justify-content:space-between; margin:14px 0; gap:12px; padding-left: 20px;">
 
         <!-- Custom styled checkbox -->
         <label style="display:flex; align-items:center; cursor:pointer;">
-          <input type="checkbox" style="display:none;" onchange="this.nextElementSibling.classList.toggle('checked')">
-          <span style="
+          <input 
+            type="checkbox" 
+            style="display:none;" 
+            data-habit-id="{{ habit.habit_id }}"
+            {% if habit.status == 'Completed' %}checked{% endif %}
+            onchange="toggleHabitStatus(this)"
+          >
+          <span class="{% if habit.status == 'Completed' %}checked{% endif %}" style="
             width:22px; height:22px;
             display:inline-block;
             border:2px solid #00ff99;
             border-radius:6px;
             position:relative;
-            transition:all 0.3s ease;
+            transition: all 0.3s ease;
           "></span>
         </label>
 
         <!-- Habit card -->
-        <div style="
-          background:rgba(255, 255, 255, 0.05);
-          padding:8px 10px;   /* 🔹 shorter */
-          border-radius:12px;
-          flex:1;
-          max-width: 400px;
-          text-align:center;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          min-height:34px;   /* 🔹 smaller height */
-          box-shadow:0 2px 6px rgba(0,0,0,0.25);
-          transition: all 0.3s ease;
-        ">
-          <h3 style="margin:0; color:#fff; font-size:16px;"> 
+        <div class="habit-card {% if habit.status == 'Completed' %}completed{% endif %}">
+          <h3 style="margin:0; color:#fff; font-size:16px; "> 
             {{ habit.custom_name if habit.custom_name else habit.habit_name }}
           </h3>
         </div>
 
         <!-- Remove button -->
-        <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0;">
+        <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0; ">
           <button style="
+            position: relative;
+            left: 45px;
             background:rgba(255, 255, 255, 0.05);
             color:#fff;
             border:none;
@@ -78,7 +68,7 @@
     {% endfor %}
   </div>
 
-  <!-- Custom checkbox tick styling -->
+  <!-- Styles -->
   <style>
     label span.checked {
       background:#00ff99;
@@ -93,7 +83,95 @@
       left:50%;
       transform:translate(-50%, -55%);
     }
+
+    .habit-card {
+      background: rgba(255, 255, 255, 0.05); /* default */
+      padding:8px 10px;
+      border-radius:12px;
+      flex:1;
+      max-width: 400px;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:34px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.25);
+      transition: all 0.3s ease, transform 0.2s ease;
+      position: relative;
+      left: 25px;
+    }
+
+    .habit-card.completed {
+      background: rgba(10, 10, 50, 0.7); 
+      box-shadow: 3px 3px 6px rgba(80,145,250,0.5);
+      transform: translateY(-2px);
+;
+    }
   </style>
+
+  <!-- JS -->
+  <script>
+    function toggleHabitStatus(checkbox) {
+        const span = checkbox.nextElementSibling;
+
+        // Tick toggle
+        if (checkbox.checked) span.classList.add('checked');
+        else span.classList.remove('checked');
+
+        // Find habit card in same container
+        const habitCard = checkbox.closest('.habit-item').querySelector('.habit-card');
+        if (habitCard) {
+            habitCard.classList.toggle('completed', checkbox.checked);
+        }
+
+        // Update backend
+        fetch("/update_habit_status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                habit_id: checkbox.dataset.habitId,
+                status: checkbox.checked ? 'Completed' : 'Pending'
+            })
+        })
+        .then(res => res.json())
+        .then(data => console.log("Status updated:", data.message))
+        .catch(err => console.error("Error:", err));
+    }
+   
+    function toggleHabitStatus(checkbox) {
+        const habitItem = checkbox.closest('.habit-item');
+        const habitCard = habitItem.querySelector('.habit-card');
+        const removeBtn = habitItem.querySelector('form');
+        const span = checkbox.nextElementSibling;
+        const isChecked = checkbox.checked;
+
+        // ✅ Step 1: Hide checkbox and remove button together
+        checkbox.style.visibility = "hidden";
+        if (span) span.style.visibility = "hidden";
+        if (removeBtn) removeBtn.style.visibility = "hidden";
+
+        // ✅ Step 2: Apply color change correctly (after hide)
+        if (habitCard) {
+            if (isChecked) habitCard.classList.add('completed');
+            else habitCard.classList.remove('completed');
+        }
+
+        // ✅ Step 3: Send update to backend
+        fetch("/update_habit_status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                habit_id: checkbox.dataset.habitId, 
+                status: isChecked ? 'Completed' : 'Pending' 
+            })
+        })
+        .then(res => res.json())
+        .then(data => console.log("Status updated:", data.message))
+        .catch(err => console.error("Error:", err));
+    }
+
+</script>
+
 
 {% else %}
   <p style="text-align:center; margin-top:30px; color:#bbb;">
