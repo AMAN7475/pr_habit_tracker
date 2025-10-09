@@ -16,24 +16,49 @@
       <!-- Habit container -->
       <div class="habit-item" style="display:flex; align-items:center; justify-content:space-between; margin:14px 0; gap:12px; padding-left: 20px;">
 
-        <!-- Custom styled checkbox -->
-        <label style="display:flex; align-items:center; cursor:pointer;">
-          <input 
-            type="checkbox" 
-            style="display:none;" 
-            data-habit-id="{{ habit.habit_id }}"
-            {% if habit.status == 'Completed' %}checked{% endif %}
-            onchange="toggleHabitStatus(this)"
-          >
-          <span class="{% if habit.status == 'Completed' %}checked{% endif %}" style="
-            width:22px; height:22px;
-            display:inline-block;
-            border:2px solid #00ff99;
-            border-radius:6px;
-            position:relative;
-            transition: all 0.3s ease;
-          "></span>
-        </label>
+        {% if habit.status != 'Completed' %}
+          <!-- Custom styled checkbox -->
+          <label style="display:flex; align-items:center; cursor:pointer;">
+            <input 
+              type="checkbox" 
+              style="display:none;" 
+              data-habit-id="{{ habit.habit_id }}"
+              {% if habit.status == 'Completed' %}checked{% endif %}
+              onchange="toggleHabitStatus(this)"
+            >
+            <span class="{% if habit.status == 'Completed' %}checked{% endif %}" style="
+              width:22px; height:22px;
+              display:inline-block;
+              border:2px solid #00ff99;
+              border-radius:6px;
+              position:relative;
+              transition: all 0.3s ease;
+            "></span>
+          </label>
+
+          <!-- Remove button -->
+          <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0; ">
+            <button style="
+              position: relative;
+              left: 45px;
+              background:rgba(255, 255, 255, 0.05);
+              color:#fff;
+              border:none;
+              padding:8px 14px;
+              border-radius:10px;
+              font-weight:bold;
+              font-size:14px;
+              margin-left:10px;
+              box-shadow:0px 2px 5px rgba(0,0,0,0.25);
+              cursor:pointer;
+              transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease; 
+            " 
+            onmouseover="this.style.background='#ff4d4d'; this.style.color='#000';" 
+            onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#fff';">
+              Remove
+            </button>
+          </form> 
+        {% endif %}  
 
         <!-- Habit card -->
         <div class="habit-card {% if habit.status == 'Completed' %}completed{% endif %}">
@@ -42,34 +67,12 @@
           </h3>
         </div>
 
-        <!-- Remove button -->
-        <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0; ">
-          <button style="
-            position: relative;
-            left: 45px;
-            background:rgba(255, 255, 255, 0.05);
-            color:#fff;
-            border:none;
-            padding:8px 14px;
-            border-radius:10px;
-            font-weight:bold;
-            font-size:14px;
-            margin-left:10px;
-            box-shadow:0px 2px 5px rgba(0,0,0,0.25);
-            cursor:pointer;
-            transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease; 
-          " 
-          onmouseover="this.style.background='#ff4d4d'; this.style.color='#000';" 
-          onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#fff';">
-            Remove
-          </button>
-        </form>  
       </div>
     {% endfor %}
   </div>
 
   <!-- Styles -->
-  <style>
+    <style>
     label span.checked {
       background:#00ff99;
     }
@@ -85,7 +88,7 @@
     }
 
     .habit-card {
-      background: rgba(255, 255, 255, 0.05); /* default */
+      background: rgba(255, 255, 255, 0.05);
       padding:8px 10px;
       border-radius:12px;
       flex:1;
@@ -98,46 +101,18 @@
       box-shadow:0 2px 6px rgba(0,0,0,0.25);
       transition: all 0.3s ease, transform 0.2s ease;
       position: relative;
-      left: 25px;
     }
 
     .habit-card.completed {
       background: rgba(10, 10, 50, 0.7); 
       box-shadow: 3px 3px 6px rgba(80,145,250,0.5);
       transform: translateY(-2px);
-;
     }
   </style>
-
+  
   <!-- JS -->
-  <script>
-    function toggleHabitStatus(checkbox) {
-        const span = checkbox.nextElementSibling;
-
-        // Tick toggle
-        if (checkbox.checked) span.classList.add('checked');
-        else span.classList.remove('checked');
-
-        // Find habit card in same container
-        const habitCard = checkbox.closest('.habit-item').querySelector('.habit-card');
-        if (habitCard) {
-            habitCard.classList.toggle('completed', checkbox.checked);
-        }
-
-        // Update backend
-        fetch("/update_habit_status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                habit_id: checkbox.dataset.habitId,
-                status: checkbox.checked ? 'Completed' : 'Pending'
-            })
-        })
-        .then(res => res.json())
-        .then(data => console.log("Status updated:", data.message))
-        .catch(err => console.error("Error:", err));
-    }
-   
+  <script>  
+    // ✅ This runs whenever a checkbox is clicked
     function toggleHabitStatus(checkbox) {
         const habitItem = checkbox.closest('.habit-item');
         const habitCard = habitItem.querySelector('.habit-card');
@@ -145,18 +120,18 @@
         const span = checkbox.nextElementSibling;
         const isChecked = checkbox.checked;
 
-        // ✅ Step 1: Hide checkbox and remove button together
+        // ✅ Step 1: Hide checkbox + remove button
         checkbox.style.visibility = "hidden";
         if (span) span.style.visibility = "hidden";
         if (removeBtn) removeBtn.style.visibility = "hidden";
 
-        // ✅ Step 2: Apply color change correctly (after hide)
+        // ✅ Step 2: Add "completed" style
         if (habitCard) {
             if (isChecked) habitCard.classList.add('completed');
             else habitCard.classList.remove('completed');
         }
 
-        // ✅ Step 3: Send update to backend
+        // ✅ Step 3: Save status to backend
         fetch("/update_habit_status", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -170,6 +145,26 @@
         .catch(err => console.error("Error:", err));
     }
 
+    // ✅ This runs automatically when the page loads
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('input[type="checkbox"][data-habit-id]').forEach(checkbox => {
+            const habitItem = checkbox.closest('.habit-item');
+            const habitCard = habitItem.querySelector('.habit-card');
+            const removeBtn = habitItem.querySelector('form');
+            const span = checkbox.nextElementSibling;
+
+            // Check if it’s marked completed in backend (Jinja renders this)
+            const isCompleted = checkbox.hasAttribute('checked');
+
+            if (isCompleted) {
+                // Hide checkbox + remove button on load
+                checkbox.style.visibility = "hidden";
+                if (span) span.style.visibility = "hidden";
+                if (removeBtn) removeBtn.style.visibility = "hidden";
+                if (habitCard) habitCard.classList.add('completed');
+            }
+        });
+    });
 </script>
 
 

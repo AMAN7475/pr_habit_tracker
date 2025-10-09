@@ -1235,7 +1235,7 @@ def update_habit_status():
         UPDATE daily_task_status
         SET status = %s, marked_time = NOW()
         WHERE user_id = %s AND habit_id = %s AND everyday_date = CURDATE()
-    """, ("Completed", user_id, habit_id))
+    """, (status, user_id, habit_id))
     mysql.connection.commit()
     cursor.close()
 
