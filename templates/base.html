@@ -169,7 +169,7 @@
   <div id="sidebar" class="sidebar">
     <span class="close-btn" onclick="closeSidebar()">×</span>
     <a href="{{ url_for('profile') }}" onclick="closeSidebar()">My Profile</a>
-    <a href="#" onclick="closeSidebar()">My Stats</a>
+    <a href="{{ url_for('my_stats') }}" onclick="closeSidebar()">My Stats</a>
     <a href="/my_habits" onclick="closeSidebar()">My Habits</a>
     <a href="{{ url_for('about_us') }}" onclick="closeSidebar()">About Us</a>
     <a href="/logout" onclick="closeSidebar()">Logout</a>

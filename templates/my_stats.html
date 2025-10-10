@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Stats - Track It{% endblock %}
+
+{% block content %}
+<h2 style="color:#fff; margin-left:20px; margin-top:20px;">
+    Daily Habit Status
+</h2>
+
+<div class="days-container">
+    {% for day in days %}
+    <div class="day-tab {% if day.date == today %}today{% endif %}">
+        <span class="day-label">{{ day.date.strftime('%d %b %Y') }}</span>
+
+        <div class="day-details">
+            <div class="stat-row total">
+                <span>Total Habits</span>
+                <span>{{ day.total_habits }}</span>
+            </div>
+            <div class="stat-row completed">
+                <span>Completed</span>
+                <span>{{ day.completed_habits }}</span>
+            </div>
+            <div class="stat-row skipped">
+                <span>Skipped</span>
+                <span>{{ day.skipped_habits }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Styles -->
+<style>
+/* Container for all day cards */
+.days-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); /* smaller tabs */
+    gap: 16px; /* increased gap */
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0 10px;
+    margin-top: 40px;
+}
+
+/* Each day card */
+.day-tab {
+    position: relative;
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    border-radius: 12px;
+    padding: 6px 4px; /* smaller padding for smaller tabs */
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Hover effect */
+.day-tab:hover {
+    background: rgba(10,10,50,0.85);
+    transform: translateY(-4px);
+    box-shadow: 4px 4px 12px rgba(80,145,250,0.6);
+    z-index: 5;
+}
+
+/* Day label (date font bigger) */
+.day-label {
+    font-weight: bold;
+    font-size: 18px; /* bigger date font */
+    margin-bottom: 4px;
+}
+
+/* Hidden details panel */
+.day-details {
+    display: none;
+    position: absolute;
+    top: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.95);
+    color: #fff;
+    padding: 16px 20px; /* increased padding */
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.7);
+    z-index: 10;
+    font-size: 14px;
+    min-width: 200px; /* increased width */
+    max-width: 260px;
+    white-space: normal;
+}
+
+/* Show details on hover */
+.day-tab:hover .day-details {
+    display: block;
+}
+
+/* Stats rows */
+.day-details .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px; /* more spacing */
+    border-radius: 6px;
+    font-size: 15px; /* slightly bigger font for stats */
+    font-weight: 500;
+    gap:6px;
+    background-clip: content-box;
+}
+
+/* Color coding */
+.day-details .stat-row.total {
+    background: rgba(200,200,200,0.1);
+    color: #ccc;
+}
+.day-details .stat-row.completed {
+    background: rgba(0,255,153,0.25);
+    color: #00ff99;
+}
+.day-details .stat-row.skipped {
+    background: rgba(255,77,77,0.25);
+    color: #ff4d4d;
+}
+
+.day-details .stat-row + .stat-row {
+    margin-top: 8px; /* creates black space between rows */
+}
+
+/* Highlight today’s date */
+.day-tab.today {
+    border: 2px solid #00ff99;
+    box-shadow: 0 0 12px #00ff99;
+}
+</style>
+{% endblock %}

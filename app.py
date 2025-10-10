@@ -1241,6 +1241,62 @@ def update_habit_status():
 
     return jsonify(success=True, message=f"Status updated to {status}")
 
+#----------------------------
+# My Stats (of habits)
+#----------------------------
+
+@app.route("/my_stats")
+def my_stats():
+    if "loggedin" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Get all distinct dates
+    cursor.execute("""
+        SELECT DISTINCT everyday_date FROM daily_task_status 
+        WHERE user_id=%s ORDER BY everyday_date DESC
+    """, (user_id,))
+    dates = cursor.fetchall()
+
+    days = []
+    for d in dates:
+        date_val = d['everyday_date']
+
+        # Total habits
+        cursor.execute("""
+            SELECT COUNT(*) as total_habits FROM daily_task_status 
+            WHERE user_id=%s AND everyday_date=%s
+        """, (user_id, date_val))
+        total_habits = cursor.fetchone()['total_habits']
+
+        # Completed habits
+        cursor.execute("""
+            SELECT COUNT(*) as completed_habits FROM daily_task_status 
+            WHERE user_id=%s AND everyday_date=%s AND status='Completed'
+        """, (user_id, date_val))
+        completed = cursor.fetchone()['completed_habits']
+
+        # Skipped habits
+        cursor.execute("""
+            SELECT COUNT(*) as skipped_habits FROM daily_task_status 
+            WHERE user_id=%s AND everyday_date=%s AND status='Skipped'
+        """, (user_id, date_val))
+        skipped = cursor.fetchone()['skipped_habits']
+
+        days.append({
+            "date": date_val,
+            "total_habits": total_habits,
+            "completed_habits": completed,
+            "skipped_habits": skipped
+        })
+
+    cursor.close()
+    return render_template("my_stats.html", days=days)
+
+
+
 
 #----------------------------
 # Edit Habits
@@ -1599,6 +1655,7 @@ def update_profile():
 def about_us():
     username = session.get('username', 'Guest')
     return render_template("about_us.html", username=username)
+
 
 
 # ---------------------------

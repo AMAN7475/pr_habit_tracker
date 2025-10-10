@@ -13,12 +13,13 @@
 {% if habits %}
   <div style="margin-top: 20px; max-width: 600px; margin-left:auto; margin-right:auto;">
     {% for habit in habits %}
+
       <!-- Habit container -->
       <div class="habit-item" style="display:flex; align-items:center; justify-content:space-between; margin:14px 0; gap:12px; padding-left: 20px;">
 
-        {% if habit.status != 'Completed' %}
+        <label style="display:flex; align-items:center; justify-content:center; width:45px; cursor:pointer;">
           <!-- Custom styled checkbox -->
-          <label style="display:flex; align-items:center; cursor:pointer;">
+          {% if habit.status != 'Completed' %}
             <input 
               type="checkbox" 
               style="display:none;" 
@@ -34,10 +35,20 @@
               position:relative;
               transition: all 0.3s ease;
             "></span>
-          </label>
+          {% endif %}
+        </label>
+        
+          <!-- Habit card -->
+          <div class="habit-card {% if habit.status == 'Completed' %}completed{% endif %}">
+            <h3 style="margin:0; font-size:16px; "> 
+              {{ habit.custom_name if habit.custom_name else habit.habit_name }}
+            </h3>
+          </div>
+
 
           <!-- Remove button -->
-          <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="margin:0; ">
+        <form action="{{ url_for('remove_habit', habit_id=habit.habit_id) }}" method="POST" style="width:90px; display:flex; justify-content:center;">
+          {% if habit.status != 'Completed' %}
             <button style="
               position: relative;
               left: 45px;
@@ -57,15 +68,8 @@
             onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#fff';">
               Remove
             </button>
-          </form> 
-        {% endif %}  
-
-        <!-- Habit card -->
-        <div class="habit-card {% if habit.status == 'Completed' %}completed{% endif %}">
-          <h3 style="margin:0; color:#fff; font-size:16px; "> 
-            {{ habit.custom_name if habit.custom_name else habit.habit_name }}
-          </h3>
-        </div>
+          {% endif %} 
+        </form> 
 
       </div>
     {% endfor %}
@@ -101,13 +105,31 @@
       box-shadow:0 2px 6px rgba(0,0,0,0.25);
       transition: all 0.3s ease, transform 0.2s ease;
       position: relative;
+      left:25px;
+    }
+
+    .habit-item label,
+    .habit-item form {
+      flex-shrink: 0;      /* reserve space for left/right */
+    }
+
+    .habit-item label {
+      width: 45px;         /* space for checkbox */
+      justify-content: center;
+    }
+
+    .habit-item form {
+      width: 90px;         /* space for remove button */
+      justify-content: center;
     }
 
     .habit-card.completed {
       background: rgba(10, 10, 50, 0.7); 
+      color: #f6e77c;
       box-shadow: 3px 3px 6px rgba(80,145,250,0.5);
       transform: translateY(-2px);
     }
+
   </style>
   
   <!-- JS -->
